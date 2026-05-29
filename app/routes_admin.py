@@ -345,11 +345,11 @@ def users_import():
         # Leer todas las filas en memoria primero
         rows_data = []
         for row in ws.iter_rows(min_row=2, values_only=True):
-            documento = str(row[idx_doc]).strip() if row[idx_doc] else ""
-            nombre = str(row[idx_nombre]).strip() if row[idx_nombre] else ""
-            email = str(row[idx_email]).strip() if (idx_email is not None and row[idx_email]) else ""
-            grupo = str(row[idx_grupo]).strip() if (idx_grupo is not None and row[idx_grupo]) else ""
-            parcela_val = str(row[idx_parcela]).strip() if (idx_parcela is not None and row[idx_parcela]) else ""
+            documento = str(row[idx_doc]).strip()[:50] if row[idx_doc] else ""
+            nombre = str(row[idx_nombre]).strip()[:200] if row[idx_nombre] else ""
+            email = str(row[idx_email]).strip()[:200] if (idx_email is not None and row[idx_email]) else ""
+            grupo = str(row[idx_grupo]).strip()[:200] if (idx_grupo is not None and row[idx_grupo]) else ""
+            parcela_val = str(row[idx_parcela]).strip()[:100] if (idx_parcela is not None and row[idx_parcela]) else ""
             app_val = str(row[idx_app]).strip().lower() if (idx_app is not None and row[idx_app]) else "si"
             if documento and nombre and grupo:
                 rows_data.append({
