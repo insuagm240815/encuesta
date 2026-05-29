@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Nueva Encuesta{% endblock %}
+{% block content %}
+<h1 class="page-title">Nueva Encuesta</h1>
+<div class="card" style="max-width:600px;">
+  <form method="POST">
+    <div class="form-group">
+      <label>Título *</label>
+      <input type="text" name="title" required placeholder="Ej: Encuesta de satisfacción 2024">
+    </div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <textarea name="description" placeholder="Descripción opcional para los participantes"></textarea>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Fecha de inicio</label>
+        <input type="datetime-local" name="start_date">
+      </div>
+      <div class="form-group">
+        <label>Fecha de cierre</label>
+        <input type="datetime-local" name="end_date">
+      </div>
+    </div>
+    <div class="form-check">
+      <input type="checkbox" name="is_active" id="is_active">
+      <label for="is_active" style="margin:0;">Encuesta activa (visible para usuarios)</label>
+    </div>
+    <div class="flex gap-2 mt-2">
+      <button type="submit" class="btn btn-primary">Crear encuesta</button>
+      <a href="/admin/" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

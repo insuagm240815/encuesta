@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL ────────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: encuesta_user
+      POSTGRES_PASSWORD: encuesta_pass
+      POSTGRES_DB: encuesta_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U encuesta_user -d encuesta_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── App Flask (opcional: comenta este bloque si corres la app con python run.py) ─
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FLASK_ENV: development
+      SECRET_KEY: cambiar-en-produccion
+      DATABASE_URL: postgresql://encuesta_user:encuesta_pass@db:5432/encuesta_dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app   # hot-reload en desarrollo
+
+volumes:
+  pgdata:

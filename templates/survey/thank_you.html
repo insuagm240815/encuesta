@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}¡Gracias!{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:4rem auto;text-align:center;">
+  <div class="card">
+    <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
+    <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:.5rem;">¡Gracias por responder!</h1>
+    <p class="text-muted">Tu respuesta para <strong>{{ survey.title }}</strong> fue registrada correctamente.</p>
+    <a href="/encuesta/" class="btn btn-primary mt-2" style="margin-top:1.5rem;">Volver al inicio</a>
+  </div>
+</div>
+{% endblock %}

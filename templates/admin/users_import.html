@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Importar Usuarios{% endblock %}
+{% block content %}
+<h1 class="page-title">Importar usuarios desde Excel</h1>
+<div class="card" style="max-width:600px;">
+  <p style="margin-bottom:1rem;">Sube un archivo <strong>.xlsx</strong> con las columnas: <code>documento</code>, <code>residente</code>, <code>email</code>, <code>grupo primario</code>, <code>app</code>.</p>
+  <div class="alert alert-info">
+    Los usuarios <strong>sin grupo primario</strong> serán omitidos.<br>
+    Si el documento ya existe, se actualizarán los datos (sin cambiar contraseña).<br>
+    La contraseña inicial de cada usuario es su número de documento.
+  </div>
+  <form method="POST" enctype="multipart/form-data" style="margin-top:1rem;">
+    <div class="form-group">
+      <label>Archivo Excel (.xlsx)</label>
+      <input type="file" name="excel_file" accept=".xlsx" required style="padding:.4rem;">
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary">Importar</button>
+      <a href="/admin/users" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

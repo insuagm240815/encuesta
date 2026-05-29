@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Panel de Administración{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Panel de Administración</h1>
+  <div class="actions flex gap-2 flex-wrap">
+    <a href="/admin/users/import" class="btn btn-outline">⬆ Importar usuarios</a>
+    <a href="/admin/survey/new" class="btn btn-primary">+ Nueva encuesta</a>
+  </div>
+</div>
+
+<div class="grid-3" style="margin-bottom:1.25rem;">
+  <div class="card stat">
+    <div class="stat-number">{{ surveys|length }}</div>
+    <div class="stat-label">Encuestas creadas</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-number">{{ surveys|selectattr('is_active')|list|length }}</div>
+    <div class="stat-label">Encuestas activas</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-number">{{ users_count }}</div>
+    <div class="stat-label">Usuarios registrados</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Encuestas</span>
+    <a href="/admin/survey/new" class="btn btn-primary btn-sm">+ Nueva</a>
+  </div>
+  {% if surveys %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Título</th><th>Estado</th><th>Inicio</th><th>Cierre</th><th>Resp.</th><th>Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for s in surveys %}
+        <tr>
+          <td><strong>{{ s.title }}</strong></td>
+          <td>
+            {% if s.is_open %}<span class="badge badge-green">Abierta</span>
+            {% elif s.is_active %}<span class="badge badge-yellow">Activa/sin fecha</span>
+            {% else %}<span class="badge badge-gray">Inactiva</span>{% endif %}
+          </td>
+          <td class="text-muted" style="white-space:nowrap;">{{ s.start_date.strftime('%d/%m/%y %H:%M') if s.start_date else '—' }}</td>
+          <td class="text-muted" style="white-space:nowrap;">{{ s.end_date.strftime('%d/%m/%y %H:%M') if s.end_date else '—' }}</td>
+          <td>{{ s.responses|length }}</td>
+          <td>
+            <div class="flex gap-1 flex-wrap">
+              <a href="/admin/survey/{{ s.id }}/edit" class="btn btn-outline btn-sm">✏</a>
+              <a href="/admin/survey/{{ s.id }}/results" class="btn btn-outline btn-sm">📊</a>
+              <form method="POST" action="/admin/survey/{{ s.id }}/delete"
+                    onsubmit="return confirm('¿Eliminar esta encuesta y todas sus respuestas?')">
+                <button class="btn btn-danger btn-sm">🗑</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted">No hay encuestas. <a href="/admin/survey/new">Crea la primera</a>.</p>
+  {% endif %}
+</div>
+{% endblock %}

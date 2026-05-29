@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+{% block title %}Resultados: {{ survey.title }}{% endblock %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  /* ── Stats ───────────────────────────────────────────────── */
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.5rem; }
+  @media(max-width:768px){ .stats-row{ grid-template-columns:1fr 1fr; } }
+  @media(max-width:420px){ .stats-row{ grid-template-columns:1fr; } }
+
+  /* ── Participation section ───────────────────────────────── */
+  .part-grid { display:grid; grid-template-columns:420px 1fr; gap:1.5rem; margin-bottom:1.5rem; align-items:start; }
+  @media(max-width:900px){ .part-grid{ grid-template-columns:1fr; } }
+
+  /* ── Progress bar ────────────────────────────────────────── */
+  .pbar-wrap { background:#e2e8f0; border-radius:4px; height:7px; min-width:60px; flex:1; }
+  .pbar      { height:7px; border-radius:4px; transition:width .4s; }
+  .pbar-low  { background:var(--danger); }
+  .pbar-mid  { background:var(--warning); }
+  .pbar-high { background:var(--success); }
+
+  /* ── Question cards ──────────────────────────────────────── */
+  .q-card { border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; margin-bottom:1.1rem; background:var(--surface); }
+  .q-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem; flex-wrap:wrap; margin-bottom:1rem; }
+  .q-title  { font-weight:600; font-size:.95rem; flex:1; line-height:1.4; }
+  .q-meta   { font-size:.78rem; color:var(--text-muted); white-space:nowrap; }
+  .q-layout { display:grid; grid-template-columns:1fr 220px; gap:1.5rem; align-items:start; }
+  @media(max-width:640px){ .q-layout{ grid-template-columns:1fr; } }
+
+  /* toggle */
+  .ct-toggle { display:flex; gap:.3rem; margin-bottom:.7rem; }
+  .ct-btn { padding:.22rem .65rem; font-size:.76rem; border-radius:4px; border:1px solid var(--border); background:var(--bg); cursor:pointer; transition:.12s; }
+  .ct-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+  /* mini table */
+  .mini-table { width:100%; border-collapse:collapse; font-size:.8rem; }
+  .mini-table th { background:var(--bg); padding:.35rem .5rem; text-align:left; font-weight:600; border-bottom:1px solid var(--border); }
+  .mini-table td { padding:.3rem .5rem; border-bottom:1px solid var(--border); }
+  .mini-table tr:last-child td { border-bottom:none; }
+  .mini-pbar-wrap { background:#e2e8f0; border-radius:3px; height:5px; margin-top:.3rem; min-width:50px; }
+  .mini-pbar      { height:5px; border-radius:3px; background:var(--primary); }
+
+  /* text answers */
+  .text-answers { max-height:240px; overflow-y:auto; }
+  .ta-item { padding:.4rem .6rem; border-left:3px solid var(--border); margin-bottom:.3rem; font-size:.85rem; }
+
+  /* subquestion */
+  .subq-wrap { margin-top:.9rem; padding:.85rem 1rem; background:#f8faff; border-left:3px solid var(--primary); border-radius:0 6px 6px 0; }
+  .subq-label { font-size:.72rem; color:var(--primary); font-weight:700; margin-bottom:.4rem; letter-spacing:.03em; }
+
+  /* avg badge */
+  .avg-badge { background:#dbeafe; color:#1e40af; padding:.15rem .6rem; border-radius:5px; font-size:.82rem; font-weight:700; }
+
+  /* section title */
+  .section-title { font-size:1rem; font-weight:700; margin:1.5rem 0 .75rem; color:var(--text); }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title" style="margin-bottom:.2rem;">📊 {{ survey.title }}</h1>
+    {% if survey.description %}<p class="text-muted">{{ survey.description }}</p>{% endif %}
+    <p style="font-size:.78rem;color:var(--text-muted);margin-top:.3rem;">
+      {% if survey.start_date %}Inicio: {{ survey.start_date.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+      {% if survey.end_date %} · Cierre: {{ survey.end_date.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+    </p>
+  </div>
+  <div class="flex gap-2 flex-wrap">
+    <a href="/admin/survey/{{ survey.id }}/export" class="btn btn-success">⬇ Descargar Excel</a>
+    <a href="/admin/survey/{{ survey.id }}/edit"   class="btn btn-outline btn-sm">← Editar</a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="card stat">
+    <div class="stat-number">{{ total_responses }}</div>
+    <div class="stat-label">Respondieron</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-number" style="color:var(--danger);">{{ pending_count }}</div>
+    <div class="stat-label">Pendientes</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-number">{{ total_users }}</div>
+    <div class="stat-label">Total usuarios</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-number">{{ ((total_responses/total_users*100)|round(1)) if total_users else 0 }}%</div>
+    <div class="stat-label">Participación</div>
+  </div>
+</div>
+
+<!-- Participación por sector -->
+{% if group_participation %}
+<div class="part-grid">
+  <!-- Torta -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Participación por sector</span></div>
+    <canvas id="pie-sector" style="max-height:340px;"></canvas>
+  </div>
+  <!-- Tabla -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Detalle por Grupo Primario</span>
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <label style="font-size:.8rem;font-weight:500;white-space:nowrap;">Filtrar:</label>
+        <input type="text" id="group-filter" oninput="filterGroups()"
+               placeholder="Ej: 0388-AP"
+               style="width:160px;font-size:.8rem;padding:.3rem .6rem;">
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="group-table">
+        <thead><tr><th>Grupo Primario</th><th>Resp.</th><th>Total</th><th>%</th><th style="width:90px;"></th></tr></thead>
+        <tbody>
+          {% for g in group_participation %}
+          {% set p = g.pct|int %}
+          <tr data-group="{{ g.group }}">
+            <td><strong>{{ g.group }}</strong></td>
+            <td>{{ g.responded }}</td>
+            <td>{{ g.total }}</td>
+            <td>{{ g.pct }}%</td>
+            <td>
+              <div class="pbar-wrap">
+                <div class="pbar {% if p<30 %}pbar-low{% elif p<70 %}pbar-mid{% else %}pbar-high{% endif %}"
+                     style="width:{{ p }}%"></div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Resultados por pregunta -->
+<div class="section-title">Resultados por pregunta</div>
+
+{% if results %}
+  {% for q in results %}
+  <div class="q-card">
+    <div class="q-card-header">
+      <div class="q-title">{{ loop.index }}. {{ q.text }}</div>
+      <div class="q-meta">
+        {{ q.total_answers }} resp.
+        {% if q.average is defined %}&nbsp;<span class="avg-badge">Prom. {{ q.average }}</span>{% endif %}
+      </div>
+    </div>
+
+    {{ render_q(q, 'q'~q.id) }}
+
+    {% for sq in q.subquestions %}
+    <div class="subq-wrap">
+      <div class="subq-label">↳ SUBPREGUNTA</div>
+      <div style="font-weight:600;font-size:.875rem;margin-bottom:.5rem;">{{ sq.text }}</div>
+      <div class="q-meta" style="margin-bottom:.6rem;">
+        {{ sq.total_answers }} resp.
+        {% if sq.average is defined %}&nbsp;<span class="avg-badge">Prom. {{ sq.average }}</span>{% endif %}
+      </div>
+      {{ render_q(sq, 'sq'~sq.id) }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+{% else %}
+  <p class="text-muted">No hay preguntas configuradas.</p>
+{% endif %}
+
+{% endblock %}
+
+{# ── Macro ────────────────────────────────────────────────────────────────── #}
+{% macro render_q(q, cid) %}
+{% if q.chart_type in ('pie','bar') %}
+  <div class="ct-toggle">
+    {% if q.chart_type == 'pie' %}
+      <button class="ct-btn active" onclick="setType('{{cid}}','pie',this)">Torta</button>
+      <button class="ct-btn"        onclick="setType('{{cid}}','bar',this)">Barras</button>
+      <button class="ct-btn"        onclick="setType('{{cid}}','doughnut',this)">Donut</button>
+    {% else %}
+      <button class="ct-btn active" onclick="setType('{{cid}}','bar',this)">Barras</button>
+      <button class="ct-btn"        onclick="setType('{{cid}}','pie',this)">Torta</button>
+      <button class="ct-btn"        onclick="setType('{{cid}}','doughnut',this)">Donut</button>
+    {% endif %}
+  </div>
+  <div class="q-layout">
+    <canvas id="c_{{cid}}" style="max-height:280px;"></canvas>
+    <div>
+      <table class="mini-table">
+        <thead><tr><th>Opción</th><th>N</th><th>%</th></tr></thead>
+        <tbody>
+          {% set total = q.total_answers if q.total_answers else 1 %}
+          {% for d in q.chart_data %}
+          {% set pct = ((d.count / total)*100)|round(1) %}
+          <tr>
+            <td>{{ d.text }}</td>
+            <td><strong>{{ d.count }}</strong></td>
+            <td>
+              {{ pct }}%
+              <div class="mini-pbar-wrap"><div class="mini-pbar" style="width:{{ pct|int }}%"></div></div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+  (function(){
+    const CID    = '{{cid}}';
+    const labels = {{ q.chart_data|map(attribute='text')|list|tojson }};
+    const data   = {{ q.chart_data|map(attribute='count')|list|tojson }};
+    const COLORS = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#0284c7','#9333ea','#14b8a6'];
+    const bgColors = COLORS.map(c => c + 'cc');
+    const isPie = '{{q.chart_type}}' === 'pie';
+    window['ch_'+CID] = new Chart(document.getElementById('c_'+CID).getContext('2d'), {
+      type: '{{q.chart_type}}',
+      data: { labels, datasets: [{ label:'Respuestas', data, backgroundColor: bgColors, borderColor: COLORS, borderWidth: 1.5 }] },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: isPie, position:'right', labels:{ font:{size:11}, boxWidth:14 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label||''}: ${ctx.parsed.y ?? ctx.parsed} (${data.reduce((a,b)=>a+b,0) ? ((ctx.parsed.y??ctx.parsed)/data.reduce((a,b)=>a+b,0)*100).toFixed(1) : 0}%)` } }
+        },
+        scales: isPie ? {} : { y:{ beginAtZero:true, ticks:{stepSize:1} } }
+      }
+    });
+  })();
+  </script>
+
+{% elif q.chart_type == 'bar' and q.average is defined %}{# rating #}
+  <div class="q-layout">
+    <canvas id="c_{{cid}}" style="max-height:240px;"></canvas>
+    <div>
+      <table class="mini-table">
+        <thead><tr><th>Valor</th><th>N</th><th>%</th></tr></thead>
+        <tbody>
+          {% set total = q.total_answers if q.total_answers else 1 %}
+          {% for d in q.chart_data %}
+          {% set pct = ((d.count / total)*100)|round(1) %}
+          <tr>
+            <td>{{ d.text }}</td><td><strong>{{ d.count }}</strong></td>
+            <td>{{ pct }}%<div class="mini-pbar-wrap"><div class="mini-pbar" style="width:{{ pct|int }}%"></div></div></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+  (function(){
+    const labels = {{ q.chart_data|map(attribute='text')|list|tojson }};
+    const data   = {{ q.chart_data|map(attribute='count')|list|tojson }};
+    new Chart(document.getElementById('c_{{cid}}').getContext('2d'), {
+      type:'bar',
+      data:{ labels, datasets:[{ label:'Cantidad', data, backgroundColor:'#2563ebaa', borderColor:'#2563eb', borderWidth:1.5 }] },
+      options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{stepSize:1}}} }
+    });
+  })();
+  </script>
+
+{% else %}{# text #}
+  <div class="text-answers">
+    {% for item in q.chart_data %}
+    <div class="ta-item">{{ item.text }}</div>
+    {% else %}<p class="text-muted">Sin respuestas de texto.</p>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endmacro %}
+
+{% block scripts %}
+<script>
+// Filtro de grupos en tabla
+function filterGroups() {
+  const val = document.getElementById('group-filter').value.toLowerCase().trim();
+  document.querySelectorAll('#group-table tbody tr').forEach(tr => {
+    const group = tr.dataset.group.toLowerCase();
+    tr.style.display = (!val || group.includes(val)) ? '' : 'none';
+  });
+}
+
+// Cambio de tipo de gráfico
+function setType(cid, type, btn) {
+  btn.closest('.ct-toggle').querySelectorAll('.ct-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const ch = window['ch_' + cid];
+  if (!ch) return;
+  const isPie = type !== 'bar';
+  ch.config.type = type;
+  ch.options.scales = isPie ? {} : { y:{ beginAtZero:true, ticks:{stepSize:1} } };
+  ch.options.plugins.legend = { display: isPie, position:'right', labels:{ font:{size:11}, boxWidth:14 } };
+  ch.update();
+}
+
+// Torta de participación por sector
+(function(){
+  const groups = {{ group_participation|tojson }};
+  if (!groups.length) return;
+  const COLORS = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#0284c7','#9333ea','#14b8a6'];
+  new Chart(document.getElementById('pie-sector').getContext('2d'), {
+    type: 'pie',
+    data: {
+      labels: groups.map(g => g.group),
+      datasets: [{
+        data: groups.map(g => g.responded),
+        backgroundColor: COLORS.map(c => c + 'cc'),
+        borderColor: COLORS,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position:'right', labels:{ font:{size:11}, boxWidth:14 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} respondieron (${groups[ctx.dataIndex].pct}%)` } }
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

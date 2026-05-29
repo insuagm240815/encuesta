@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}{{ survey.title }}{% endblock %}
+{% block head %}
+<style>
+  .survey-wrap { max-width: 680px; margin: 0 auto; }
+  .survey-header { margin-bottom: 1.5rem; }
+  .survey-header h1 { font-size: 1.3rem; }
+
+  .q-block {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.1rem; margin-bottom: .9rem; background: var(--surface);
+    transition: border-color .2s;
+  }
+  .q-block.has-error { border-color: var(--danger); }
+  .q-num { font-size: .75rem; color: var(--text-muted); margin-bottom: .3rem; }
+  .q-text { font-weight: 600; font-size: .95rem; margin-bottom: .85rem; line-height: 1.4; }
+  .q-text .req { color: var(--danger); margin-left: .2rem; }
+
+  /* Options */
+  .option-row {
+    display: flex; align-items: center; gap: .65rem;
+    padding: .55rem .65rem; border-radius: 6px; cursor: pointer;
+    margin-bottom: .25rem; border: 1px solid transparent;
+    transition: background .12s, border-color .12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .option-row:hover  { background: #f0f4ff; border-color: #c7d7fd; }
+  .option-row:active { background: #dbeafe; }
+  .option-row input  { flex-shrink: 0; width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+  .option-row span   { font-size: .9rem; line-height: 1.35; }
+
+  /* Rating */
+  .rating-group { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .25rem; }
+  .rating-btn {
+    min-width: 44px; height: 44px; border-radius: 8px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    font-weight: 600; cursor: pointer; font-size: .9rem;
+    transition: .15s; -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rating-btn:hover  { background: #e0edff; border-color: var(--primary); }
+  .rating-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* Subquestion */
+  .subq-block {
+    margin-top: .75rem; margin-left: 0;
+    border-left: 3px solid var(--primary);
+    padding: .75rem .9rem; background: #f8faff;
+    border-radius: 0 6px 6px 0;
+    display: none;
+  }
+  .subq-block.visible { display: block; }
+  .subq-label { font-size: .72rem; color: var(--primary); font-weight: 600; margin-bottom: .4rem; }
+
+  /* Submit area */
+  .submit-area { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-top: 1.5rem; }
+  @media(max-width: 480px) {
+    .submit-area { flex-direction: column; }
+    .submit-area .btn { width: 100%; justify-content: center; font-size: .95rem; padding: .7rem; }
+    .q-block { padding: .9rem .8rem; }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="survey-wrap">
+  <div class="survey-header">
+    <h1 class="page-title" style="margin-bottom:.3rem;">{{ survey.title }}</h1>
+    {% if survey.description %}<p class="text-muted">{{ survey.description }}</p>{% endif %}
+  </div>
+
+  {% if errors %}
+  <div class="alert alert-error">
+    <strong>Corrige los siguientes campos:</strong>
+    <ul style="margin-top:.4rem;padding-left:1.1rem;">
+      {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="POST" action="/encuesta/{{ survey.id }}/submit" id="survey-form">
+    {% for q in questions %}
+    <div class="q-block" id="qblock_{{ q.id }}">
+      <div class="q-num">Pregunta {{ loop.index }} de {{ questions|length }}</div>
+      <div class="q-text">
+        {{ q.text }}{% if q.required %}<span class="req">*</span>{% endif %}
+      </div>
+
+      {% if q.question_type == 'single' %}
+        {% for opt in q.options %}
+        <label class="option-row">
+          <input type="radio" name="q_{{ q.id }}" value="{{ opt.id }}"
+            onchange="handleChange({{ q.id }})"
+            {% if form_data and form_data.get('q_' ~ q.id) == opt.id|string %}checked{% endif %}>
+          <span>{{ opt.text }}</span>
+        </label>
+        {% endfor %}
+
+      {% elif q.question_type == 'multiple' %}
+        {% for opt in q.options %}
+        <label class="option-row">
+          <input type="checkbox" name="q_{{ q.id }}" value="{{ opt.id }}"
+            onchange="handleChange({{ q.id }})"
+            {% if form_data and opt.id|string in form_data.getlist('q_' ~ q.id) %}checked{% endif %}>
+          <span>{{ opt.text }}</span>
+        </label>
+        {% endfor %}
+
+      {% elif q.question_type == 'rating' %}
+        <div class="rating-group" id="rg_{{ q.id }}">
+          {% for val in range(q.rating_min, q.rating_max + 1) %}
+          <button type="button" class="rating-btn {% if form_data and form_data.get('q_' ~ q.id) == val|string %}active{% endif %}"
+            onclick="selectRating({{ q.id }}, {{ val }}, this)">{{ val }}</button>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="q_{{ q.id }}" id="rv_{{ q.id }}"
+          value="{{ form_data.get('q_' ~ q.id, '') if form_data else '' }}">
+        <div style="display:flex;justify-content:space-between;margin-top:.3rem;">
+          <span style="font-size:.75rem;color:var(--text-muted);">{{ q.rating_min }} = Muy malo</span>
+          <span style="font-size:.75rem;color:var(--text-muted);">{{ q.rating_max }} = Muy bueno</span>
+        </div>
+
+      {% else %}{# text #}
+        <textarea name="q_{{ q.id }}" rows="3"
+          placeholder="Escribe tu respuesta aquí...">{{ form_data.get('q_' ~ q.id, '') if form_data else '' }}</textarea>
+      {% endif %}
+
+      {# Subquestions #}
+      {% for sq in q.subquestions %}
+      <div class="subq-block" id="subq_{{ sq.id }}"
+           data-trigger="{{ sq.parent_trigger_value }}" data-parent="{{ q.id }}">
+        <div class="subq-label">↳ Pregunta adicional</div>
+        <div class="q-text" style="font-size:.9rem;">
+          {{ sq.text }}{% if sq.required %}<span class="req">*</span>{% endif %}
+        </div>
+
+        {% if sq.question_type == 'single' %}
+          {% for opt in sq.options %}
+          <label class="option-row">
+            <input type="radio" name="q_{{ sq.id }}" value="{{ opt.id }}"
+              {% if form_data and form_data.get('q_' ~ sq.id) == opt.id|string %}checked{% endif %}>
+            <span>{{ opt.text }}</span>
+          </label>
+          {% endfor %}
+        {% elif sq.question_type == 'multiple' %}
+          {% for opt in sq.options %}
+          <label class="option-row">
+            <input type="checkbox" name="q_{{ sq.id }}" value="{{ opt.id }}"
+              {% if form_data and opt.id|string in form_data.getlist('q_' ~ sq.id) %}checked{% endif %}>
+            <span>{{ opt.text }}</span>
+          </label>
+          {% endfor %}
+        {% elif sq.question_type == 'rating' %}
+          <div class="rating-group" id="rg_{{ sq.id }}">
+            {% for val in range(sq.rating_min, sq.rating_max + 1) %}
+            <button type="button" class="rating-btn" onclick="selectRating({{ sq.id }}, {{ val }}, this)">{{ val }}</button>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="q_{{ sq.id }}" id="rv_{{ sq.id }}"
+            value="{{ form_data.get('q_' ~ sq.id, '') if form_data else '' }}">
+        {% else %}
+          <textarea name="q_{{ sq.id }}" rows="2"
+            placeholder="Escribe aquí...">{{ form_data.get('q_' ~ sq.id, '') if form_data else '' }}</textarea>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+    </div>
+    {% endfor %}
+
+    <div class="submit-area">
+      <button type="submit" class="btn btn-success" style="font-size:1rem;padding:.65rem 2rem;">
+        ✓ Enviar respuestas
+      </button>
+      <a href="/encuesta/" class="btn btn-outline">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function selectRating(qId, val, btn) {
+  document.getElementById(`rv_${qId}`).value = val;
+  document.querySelectorAll(`#rg_${qId} .rating-btn`).forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent.trim()) === val);
+  });
+  handleChange(qId);
+}
+
+function handleChange(qId) {
+  document.querySelectorAll(`.subq-block[data-parent="${qId}"]`).forEach(block => {
+    const trigger = block.dataset.trigger;
+    let show = false;
+    document.querySelectorAll(`[name="q_${qId}"]`).forEach(input => {
+      if (input.type === 'radio' || input.type === 'checkbox') {
+        if (input.checked && String(input.value) === String(trigger)) show = true;
+      } else if (String(input.value) === String(trigger)) {
+        show = true;
+      }
+    });
+    const wasVisible = block.classList.contains('visible');
+    block.classList.toggle('visible', show);
+    if (!show && wasVisible) {
+      block.querySelectorAll('input[type=radio],input[type=checkbox]').forEach(i => i.checked = false);
+      block.querySelectorAll('textarea').forEach(t => t.value = '');
+      block.querySelectorAll('input[type=hidden]').forEach(h => h.value = '');
+      block.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('active'));
+    }
+  });
+}
+
+// Restore conditional state on page load (after validation error)
+document.querySelectorAll('.subq-block').forEach(block => handleChange(parseInt(block.dataset.parent)));
+</script>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Mis Encuestas{% endblock %}
+{% block content %}
+<h1 class="page-title">Hola, {{ user.nombre }} 👋</h1>
+{% if surveys %}
+  {% for item in surveys %}
+  <div class="card">
+    <div class="card-header">
+      <div style="flex:1;min-width:0;">
+        <div class="card-title">{{ item.survey.title }}</div>
+        {% if item.survey.description %}<p class="text-muted" style="margin-top:.3rem;">{{ item.survey.description }}</p>{% endif %}
+        <div style="font-size:.78rem;color:var(--text-muted);margin-top:.5rem;display:flex;gap:1rem;flex-wrap:wrap;">
+          {% if item.survey.start_date %}<span>📅 Inicio: {{ item.survey.start_date.strftime('%d/%m/%Y %H:%M') }}</span>{% endif %}
+          {% if item.survey.end_date %}<span>⏰ Cierre: {{ item.survey.end_date.strftime('%d/%m/%Y %H:%M') }}</span>{% endif %}
+        </div>
+      </div>
+      <div style="flex-shrink:0;margin-top:.25rem;">
+        {% if item.already_responded %}
+          <span class="badge badge-green">✓ Ya respondiste</span>
+        {% elif item.is_open %}
+          {% if item.survey.terms_text %}
+          <a href="/encuesta/{{ item.survey.id }}/terminos" class="btn btn-primary">Responder →</a>
+          {% else %}
+          <a href="/encuesta/{{ item.survey.id }}" class="btn btn-primary">Responder →</a>
+          {% endif %}
+        {% else %}
+          <span class="badge badge-gray">No disponible</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="card">
+    <p class="text-muted">No hay encuestas disponibles por el momento.</p>
+  </div>
+{% endif %}
+{% endblock %}

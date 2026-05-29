@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+{% block title %}Editar: {{ survey.title }}{% endblock %}
+{% block head %}
+<style>
+  .q-card { border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: .75rem; background: var(--surface); }
+  .q-card:hover { border-color: var(--primary); }
+  .q-header { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; }
+  .q-type-badge { font-size: .72rem; padding: .15rem .5rem; border-radius: 4px; background: #e0f2fe; color: #075985; white-space: nowrap; }
+  .subq-card { margin-left: 2rem; border-left: 3px solid var(--primary); padding-left: 1rem; background: #f8fafc; }
+  .options-list { margin-top: .5rem; }
+  .options-list .opt { font-size: .85rem; color: var(--text-muted); }
+  .section-sep { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+  .drag-handle { cursor: grab; color: var(--text-muted); padding: 0 .3rem; }
+  .ct-btn { padding:.22rem .65rem; font-size:.76rem; border-radius:4px; border:1px solid var(--border); background:var(--bg); cursor:pointer; transition:.12s; }
+  .ct-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+  /* T&C preview styles */
+  #tc-preview-wrap h2 { font-size:1.1rem; font-weight:700; margin:.75rem 0 .3rem; }
+  #tc-preview-wrap h3 { font-size:.95rem; font-weight:700; margin:.6rem 0 .25rem; }
+  #tc-preview-wrap ul  { padding-left:1.2rem; margin:.4rem 0; }
+  #tc-preview-wrap li  { margin-bottom:.2rem; }
+  #tc-preview-wrap hr  { border:none; border-top:1px solid var(--border); margin:.75rem 0; }
+  #tc-preview-wrap strong { font-weight:700; }
+  #tc-preview-wrap em { font-style:italic; }
+</style>
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+  <h1 class="page-title" style="margin:0;">✏ {{ survey.title }}</h1>
+  <div class="flex gap-2" style="margin-left:auto;">
+    <a href="/admin/survey/{{ survey.id }}/results" class="btn btn-outline btn-sm">📊 Resultados</a>
+    <a href="/admin/" class="btn btn-outline btn-sm">← Volver</a>
+  </div>
+</div>
+
+<!-- Survey config -->
+<div class="card">
+  <div class="card-header"><span class="card-title">Configuración de la encuesta</span></div>
+  <form method="POST">
+    <div class="form-group">
+      <label>Título</label>
+      <input type="text" name="title" value="{{ survey.title }}" required>
+    </div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <textarea name="description">{{ survey.description or '' }}</textarea>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Fecha de inicio</label>
+        <input type="datetime-local" name="start_date"
+          value="{{ survey.start_date.strftime('%Y-%m-%dT%H:%M') if survey.start_date else '' }}">
+      </div>
+      <div class="form-group">
+        <label>Fecha de cierre</label>
+        <input type="datetime-local" name="end_date"
+          value="{{ survey.end_date.strftime('%Y-%m-%dT%H:%M') if survey.end_date else '' }}">
+      </div>
+    </div>
+    <div class="form-check">
+      <input type="checkbox" name="is_active" id="is_active" {% if survey.is_active %}checked{% endif %}>
+      <label for="is_active" style="margin:0;">Encuesta activa</label>
+    </div>
+
+    <!-- Términos y condiciones -->
+    <div class="form-group mt-2">
+      <label style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
+        <span>Términos y condiciones <span style="font-weight:400;color:var(--text-muted);">(opcional — el usuario debe aceptarlos antes de responder)</span></span>
+        <div style="display:flex;gap:.4rem;">
+          <button type="button" class="ct-btn active" id="tc-preview-btn" onclick="tcMode('edit')">✏ Editar</button>
+          <button type="button" class="ct-btn"        id="tc-edit-btn"    onclick="tcMode('preview')">👁 Vista previa</button>
+        </div>
+      </label>
+      <div id="tc-editor-wrap">
+        <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.4rem;" id="tc-toolbar">
+          <button type="button" class="ct-btn" onclick="tcFmt('bold')"><strong>B</strong></button>
+          <button type="button" class="ct-btn" onclick="tcFmt('italic')"><em>I</em></button>
+          <button type="button" class="ct-btn" onclick="tcFmt('h2')">H2</button>
+          <button type="button" class="ct-btn" onclick="tcFmt('h3')">H3</button>
+          <button type="button" class="ct-btn" onclick="tcFmt('ul')">• Lista</button>
+          <button type="button" class="ct-btn" onclick="tcFmt('hr')">— Separador</button>
+        </div>
+        <textarea name="terms_text" id="tc-textarea" rows="10"
+          placeholder="Escribe aquí los términos y condiciones. Podés usar formato Markdown: **negrita**, *cursiva*, ## Título, - lista..."
+          style="font-family:monospace;font-size:.85rem;">{{ survey.terms_text or '' }}</textarea>
+      </div>
+      <div id="tc-preview-wrap" style="display:none;border:1px solid var(--border);border-radius:6px;padding:1rem;min-height:120px;font-size:.9rem;line-height:1.65;" id="tc-preview"></div>
+      <p class="text-muted" style="font-size:.76rem;margin-top:.3rem;">Admite formato Markdown básico: **negrita**, *cursiva*, ## Título, - listas.</p>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-2">Guardar cambios</button>
+  </form>
+</div>
+
+<hr class="section-sep">
+
+<!-- Questions manager -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+  <h2 style="font-size:1.1rem;font-weight:600;">Preguntas</h2>
+  <button class="btn btn-primary btn-sm" onclick="openQuestionModal()">+ Agregar pregunta</button>
+</div>
+
+<div id="questions-container">
+  <p class="text-muted" id="no-questions-msg" style="display:none;">No hay preguntas aún.</p>
+</div>
+
+<!-- Question Modal -->
+<div class="modal-backdrop" id="q-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Nueva Pregunta</span>
+      <button class="modal-close" onclick="closeModal('q-modal')">×</button>
+    </div>
+    <div id="modal-body">
+      <div class="form-group">
+        <label>Texto de la pregunta *</label>
+        <textarea id="q-text" rows="3" placeholder="¿Cuál es tu pregunta?"></textarea>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="q-type" onchange="toggleTypeFields()">
+            <option value="single">Opción múltiple (una respuesta)</option>
+            <option value="multiple">Selección múltiple</option>
+            <option value="rating">Escala de valoración</option>
+            <option value="text">Texto libre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label style="visibility:hidden">.</label>
+          <div class="form-check" style="margin-top:.5rem;">
+            <input type="checkbox" id="q-required" checked>
+            <label for="q-required" style="margin:0;">Campo obligatorio</label>
+          </div>
+        </div>
+      </div>
+      <div id="rating-fields" style="display:none;">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Valor mínimo</label>
+            <input type="number" id="q-rating-min" value="1" min="0" max="10">
+          </div>
+          <div class="form-group">
+            <label>Valor máximo</label>
+            <input type="number" id="q-rating-max" value="5" min="1" max="10">
+          </div>
+        </div>
+      </div>
+      <div id="options-fields">
+        <label>Opciones de respuesta</label>
+        <div id="options-list" class="mt-1"></div>
+        <button class="btn btn-outline btn-sm mt-1" onclick="addOption()">+ Agregar opción</button>
+      </div>
+      <div class="flex gap-2 mt-2">
+        <button class="btn btn-primary" id="modal-save-btn" onclick="saveQuestion()">Guardar</button>
+        <button class="btn btn-outline" onclick="closeModal('q-modal')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Subquestion Modal -->
+<div class="modal-backdrop" id="sq-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Subpregunta condicional</span>
+      <button class="modal-close" onclick="closeModal('sq-modal')">×</button>
+    </div>
+    <div>
+      <p class="text-muted" style="margin-bottom:1rem;font-size:.875rem;">Esta pregunta se mostrará solo cuando se seleccione una opción específica de la pregunta padre.</p>
+      <div class="form-group">
+        <label>Cuando la respuesta sea</label>
+        <select id="sq-trigger"></select>
+      </div>
+      <div class="form-group">
+        <label>Texto de la subpregunta *</label>
+        <textarea id="sq-text" rows="2" placeholder="¿Desea agregar un comentario?"></textarea>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="sq-type" onchange="toggleSQTypeFields()">
+            <option value="text">Texto libre</option>
+            <option value="single">Opción múltiple (una)</option>
+            <option value="multiple">Selección múltiple</option>
+            <option value="rating">Escala de valoración</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label style="visibility:hidden">.</label>
+          <div class="form-check" style="margin-top:.5rem;">
+            <input type="checkbox" id="sq-required">
+            <label for="sq-required" style="margin:0;">Obligatoria</label>
+          </div>
+        </div>
+      </div>
+      <div id="sq-rating-fields" style="display:none;">
+        <div class="grid-2">
+          <div class="form-group"><label>Mín</label><input type="number" id="sq-rating-min" value="1" min="0" max="10"></div>
+          <div class="form-group"><label>Máx</label><input type="number" id="sq-rating-max" value="5" min="1" max="10"></div>
+        </div>
+      </div>
+      <div id="sq-options-fields" style="display:none;">
+        <label>Opciones</label>
+        <div id="sq-options-list" class="mt-1"></div>
+        <button class="btn btn-outline btn-sm mt-1" onclick="addSQOption()">+ Agregar opción</button>
+      </div>
+      <div class="flex gap-2 mt-2">
+        <button class="btn btn-primary" onclick="saveSubquestion()">Guardar subpregunta</button>
+        <button class="btn btn-outline" onclick="closeModal('sq-modal')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const SURVEY_ID = {{ survey.id }};
+let questions = [];
+let editingQId = null;
+let editingSQId = null;
+let activeSQParentId = null;
+
+// ─── Load questions ───────────────────────────────────────────────────────────
+async function loadQuestions() {
+  const res = await fetch(`/admin/survey/${SURVEY_ID}/questions`);
+  questions = await res.json();
+  renderQuestions();
+}
+
+function renderQuestions() {
+  const container = document.getElementById('questions-container');
+  const noMsg = document.getElementById('no-questions-msg');
+  if (!questions.length) { noMsg.style.display = ''; container.innerHTML = '<p class="text-muted">No hay preguntas aún.</p>'; return; }
+  noMsg.style.display = 'none';
+
+  container.innerHTML = questions.map((q, i) => `
+    <div class="q-card" data-id="${q.id}">
+      <div class="q-header">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+            <span style="font-weight:600;font-size:.9rem;">${i+1}. ${escHtml(q.text)}</span>
+            <span class="q-type-badge">${typeLabel(q.question_type)}</span>
+            ${q.required ? '<span class="badge badge-blue" style="font-size:.7rem;">obligatoria</span>' : ''}
+          </div>
+          ${q.question_type === 'rating' ? `<div class="text-muted" style="font-size:.8rem;margin-top:.3rem;">Escala: ${q.rating_min} – ${q.rating_max}</div>` : ''}
+          ${q.options.length ? `<div class="options-list">${q.options.map(o=>`<span class="opt">• ${escHtml(o.text)}</span> `).join('')}</div>` : ''}
+        </div>
+        <div class="flex gap-2" style="flex-shrink:0;">
+          <button class="btn btn-outline btn-sm" onclick="openSubquestionModal(${q.id})">+ Subpregunta</button>
+          <button class="btn btn-outline btn-sm" onclick="openEditModal(${q.id})">✏</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteQuestion(${q.id})">🗑</button>
+        </div>
+      </div>
+      ${q.subquestions.map(sq => `
+        <div class="q-card subq-card mt-1">
+          <div class="q-header">
+            <div style="flex:1;">
+              <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+                <span style="font-size:.75rem;color:var(--text-muted);">↳ Si responde: <strong>${escHtml(triggerLabel(q, sq.parent_trigger_value))}</strong></span>
+              </div>
+              <div style="font-weight:600;font-size:.875rem;margin-top:.25rem;">${escHtml(sq.text)}</div>
+              <span class="q-type-badge">${typeLabel(sq.question_type)}</span>
+              ${sq.required ? '<span class="badge badge-blue" style="font-size:.7rem;margin-left:.3rem;">obligatoria</span>' : ''}
+              ${sq.options.length ? `<div class="options-list">${sq.options.map(o=>`<span class="opt">• ${escHtml(o.text)}</span> `).join('')}</div>` : ''}
+            </div>
+            <div class="flex gap-2" style="flex-shrink:0;">
+              <button class="btn btn-outline btn-sm" onclick="openEditSQModal(${sq.id}, ${q.id})">✏</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteSubquestion(${sq.id})">🗑</button>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function triggerLabel(q, triggerVal) {
+  const opt = q.options.find(o => String(o.id) === String(triggerVal) || o.text === triggerVal);
+  return opt ? opt.text : triggerVal;
+}
+
+function typeLabel(t) {
+  return {single:'Una respuesta',multiple:'Múltiple',rating:'Valoración',text:'Texto libre'}[t] || t;
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Question Modal ───────────────────────────────────────────────────────────
+function openQuestionModal() {
+  editingQId = null;
+  document.getElementById('modal-title').textContent = 'Nueva Pregunta';
+  document.getElementById('q-text').value = '';
+  document.getElementById('q-type').value = 'single';
+  document.getElementById('q-required').checked = true;
+  document.getElementById('q-rating-min').value = 1;
+  document.getElementById('q-rating-max').value = 5;
+  document.getElementById('options-list').innerHTML = '';
+  addOption(); addOption();
+  toggleTypeFields();
+  document.getElementById('q-modal').classList.add('open');
+}
+
+function openEditModal(qId) {
+  const q = questions.find(x => x.id === qId);
+  editingQId = qId;
+  document.getElementById('modal-title').textContent = 'Editar Pregunta';
+  document.getElementById('q-text').value = q.text;
+  document.getElementById('q-type').value = q.question_type;
+  document.getElementById('q-required').checked = q.required;
+  document.getElementById('q-rating-min').value = q.rating_min;
+  document.getElementById('q-rating-max').value = q.rating_max;
+  document.getElementById('options-list').innerHTML = '';
+  q.options.forEach(o => addOption(o.text));
+  if (!q.options.length) addOption();
+  toggleTypeFields();
+  document.getElementById('q-modal').classList.add('open');
+}
+
+function toggleTypeFields() {
+  const t = document.getElementById('q-type').value;
+  document.getElementById('rating-fields').style.display = t === 'rating' ? '' : 'none';
+  document.getElementById('options-fields').style.display = ['single','multiple'].includes(t) ? '' : 'none';
+}
+
+function addOption(val='') {
+  const list = document.getElementById('options-list');
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:.4rem;margin-bottom:.4rem;';
+  div.innerHTML = `<input type="text" placeholder="Opción..." value="${escHtml(val)}" style="flex:1;">
+    <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(div);
+}
+
+async function saveQuestion() {
+  const text = document.getElementById('q-text').value.trim();
+  if (!text) { alert('Escribe el texto de la pregunta.'); return; }
+  const type = document.getElementById('q-type').value;
+  const opts = Array.from(document.querySelectorAll('#options-list input')).map(i => i.value);
+  const payload = {
+    text, question_type: type,
+    required: document.getElementById('q-required').checked,
+    rating_min: parseInt(document.getElementById('q-rating-min').value),
+    rating_max: parseInt(document.getElementById('q-rating-max').value),
+    options: opts,
+  };
+  if (editingQId) {
+    await fetch(`/admin/questions/${editingQId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+  } else {
+    await fetch(`/admin/survey/${SURVEY_ID}/questions`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+  }
+  closeModal('q-modal');
+  loadQuestions();
+}
+
+async function deleteQuestion(qId) {
+  if (!confirm('¿Eliminar esta pregunta y sus subpreguntas?')) return;
+  await fetch(`/admin/questions/${qId}`, {method:'DELETE'});
+  loadQuestions();
+}
+
+// ─── Subquestion Modal ────────────────────────────────────────────────────────
+function openSubquestionModal(parentId) {
+  activeSQParentId = parentId;
+  editingSQId = null;
+  const parent = questions.find(q => q.id === parentId);
+  const triggerSel = document.getElementById('sq-trigger');
+  triggerSel.innerHTML = parent.options.map(o => `<option value="${o.id}">${escHtml(o.text)}</option>`).join('');
+  if (!parent.options.length) triggerSel.innerHTML = '<option value="">— (sin opciones definidas) —</option>';
+  document.getElementById('sq-text').value = '';
+  document.getElementById('sq-type').value = 'text';
+  document.getElementById('sq-required').checked = false;
+  document.getElementById('sq-options-list').innerHTML = '';
+  toggleSQTypeFields();
+  document.getElementById('sq-modal').classList.add('open');
+}
+
+function openEditSQModal(sqId, parentId) {
+  activeSQParentId = parentId;
+  editingSQId = sqId;
+  const parent = questions.find(q => q.id === parentId);
+  const sq = parent.subquestions.find(s => s.id === sqId);
+  const triggerSel = document.getElementById('sq-trigger');
+  triggerSel.innerHTML = parent.options.map(o => `<option value="${o.id}" ${String(o.id) === String(sq.parent_trigger_value) ? 'selected' : ''}>${escHtml(o.text)}</option>`).join('');
+  document.getElementById('sq-text').value = sq.text;
+  document.getElementById('sq-type').value = sq.question_type;
+  document.getElementById('sq-required').checked = sq.required;
+  document.getElementById('sq-rating-min').value = sq.rating_min;
+  document.getElementById('sq-rating-max').value = sq.rating_max;
+  document.getElementById('sq-options-list').innerHTML = '';
+  sq.options.forEach(o => addSQOption(o.text));
+  toggleSQTypeFields();
+  document.getElementById('sq-modal').classList.add('open');
+}
+
+function toggleSQTypeFields() {
+  const t = document.getElementById('sq-type').value;
+  document.getElementById('sq-rating-fields').style.display = t === 'rating' ? '' : 'none';
+  document.getElementById('sq-options-fields').style.display = ['single','multiple'].includes(t) ? '' : 'none';
+}
+
+function addSQOption(val='') {
+  const list = document.getElementById('sq-options-list');
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:.4rem;margin-bottom:.4rem;';
+  div.innerHTML = `<input type="text" placeholder="Opción..." value="${escHtml(val)}" style="flex:1;">
+    <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(div);
+}
+
+async function saveSubquestion() {
+  const text = document.getElementById('sq-text').value.trim();
+  if (!text) { alert('Escribe el texto de la subpregunta.'); return; }
+  const trigger = document.getElementById('sq-trigger').value;
+  const type = document.getElementById('sq-type').value;
+  const opts = Array.from(document.querySelectorAll('#sq-options-list input')).map(i => i.value);
+  const payload = {
+    text, question_type: type,
+    required: document.getElementById('sq-required').checked,
+    rating_min: parseInt(document.getElementById('sq-rating-min').value),
+    rating_max: parseInt(document.getElementById('sq-rating-max').value),
+    parent_trigger_value: trigger,
+    options: opts,
+  };
+  if (editingSQId) {
+    await fetch(`/admin/subquestions/${editingSQId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+  } else {
+    await fetch(`/admin/questions/${activeSQParentId}/subquestion`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+  }
+  closeModal('sq-modal');
+  loadQuestions();
+}
+
+async function deleteSubquestion(sqId) {
+  if (!confirm('¿Eliminar esta subpregunta?')) return;
+  await fetch(`/admin/subquestions/${sqId}`, {method:'DELETE'});
+  loadQuestions();
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// Close on backdrop click
+document.querySelectorAll('.modal-backdrop').forEach(b => {
+  b.addEventListener('click', e => { if (e.target === b) b.classList.remove('open'); });
+});
+
+loadQuestions();
+
+// ── Términos y condiciones ────────────────────────────────────────────────────
+function tcMode(mode) {
+  const edWrap  = document.getElementById('tc-editor-wrap');
+  const prevWrap = document.getElementById('tc-preview-wrap');
+  const editBtn  = document.getElementById('tc-edit-btn');
+  const prevBtn  = document.getElementById('tc-preview-btn');
+  if (mode === 'preview') {
+    const md = document.getElementById('tc-textarea').value;
+    prevWrap.innerHTML = mdToHtml(md);
+    edWrap.style.display  = 'none';
+    prevWrap.style.display = '';
+    prevBtn.classList.add('active'); editBtn.classList.remove('active');
+  } else {
+    edWrap.style.display   = '';
+    prevWrap.style.display = 'none';
+    editBtn.classList.add('active'); prevBtn.classList.remove('active');
+  }
+}
+
+function tcFmt(fmt) {
+  const ta = document.getElementById('tc-textarea');
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const sel = ta.value.substring(start, end);
+  const inserts = {
+    bold: `**${sel || 'texto'}**`,
+    italic: `*${sel || 'texto'}*`,
+    h2: `\n## ${sel || 'Título'}\n`,
+    h3: `\n### ${sel || 'Subtítulo'}\n`,
+    ul: `\n- ${sel || 'ítem'}\n`,
+    hr: `\n---\n`,
+  };
+  const ins = inserts[fmt] || sel;
+  ta.value = ta.value.substring(0, start) + ins + ta.value.substring(end);
+  ta.focus();
+}
+
+function mdToHtml(md) {
+  return md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,  '<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,   '<em>$1</em>')
+    .replace(/^- (.+)$/gm,   '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+    .replace(/^---$/gm, '<hr>')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/^(?!<[hul]|<hr)(.+)$/gm, '$1')
+    .replace(/\n/g, '<br>');
+}
+</script>
+{% endblock %}

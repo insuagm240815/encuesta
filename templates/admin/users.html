@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Usuarios{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+  <h1 class="page-title" style="margin:0;">Usuarios ({{ users|length }})</h1>
+  <a href="/admin/users/import" class="btn btn-primary">⬆ Importar Excel</a>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Documento</th><th>Nombre</th><th>Email</th><th>Grupo</th><th>App</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><code>{{ u.documento }}</code></td>
+          <td>{{ u.nombre }}</td>
+          <td class="text-muted">{{ u.email or '—' }}</td>
+          <td>{{ u.grupo_primario or '—' }}</td>
+          <td>{% if u.app_access %}<span class="badge badge-green">Sí</span>{% else %}<span class="badge badge-gray">No</span>{% endif %}</td>
+          <td>
+            <div class="flex gap-2">
+              <button class="btn btn-outline btn-sm" onclick="resetPwd({{ u.id }}, '{{ u.nombre }}')">🔑 Reset pwd</button>
+              <form method="POST" action="/admin/users/{{ u.id }}/delete" onsubmit="return confirm('¿Eliminar usuario {{ u.nombre }}?')">
+                <button class="btn btn-danger btn-sm">🗑</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-muted">No hay usuarios. <a href="/admin/users/import">Importa un Excel</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function resetPwd(userId, name) {
+  if (!confirm(`¿Restablecer contraseña de ${name} a su número de documento?`)) return;
+  const res = await fetch(`/admin/users/${userId}/reset-password`, {method:'POST'});
+  const data = await res.json();
+  alert(data.message);
+}
+</script>
+{% endblock %}
