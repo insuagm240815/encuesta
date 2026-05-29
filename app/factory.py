@@ -43,7 +43,10 @@ def create_app(config_override=None):
         return redirect(url_for("auth.login"))
 
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+        except Exception:
+            db.session.rollback()
         _seed_admin()
 
     return app
