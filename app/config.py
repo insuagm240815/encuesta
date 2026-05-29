@@ -4,6 +4,7 @@ import os
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-cambiar-en-produccion")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB max upload
     # Pool de conexiones para PostgreSQL multi-hilo
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_size": 10,
