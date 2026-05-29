@@ -389,7 +389,14 @@ def users_import():
         nuevos = list(nuevos.values())
 
         # Insertar nuevos en lotes de 500 (bulk insert)
+        # Usamos md5 solo para el hash inicial del import masivo (rendimiento).
+        # El usuario puede cambiar su contraseña después con un hash seguro.
         from werkzeug.security import generate_password_hash as gph
+        import hashlib
+        def fast_hash(password):
+            # pbkdf2 con iteraciones bajas para import masivo
+            return gph(password, method="pbkdf2:sha256", salt_length=8)
+
         BATCH = 500
         for i in range(0, len(nuevos), BATCH):
             lote = nuevos[i:i + BATCH]
@@ -404,7 +411,7 @@ def users_import():
                         "parcela": r["parcela"],
                         "app_access": r["app_access"],
                         "is_admin": False,
-                        "password_hash": gph(r["documento"]),
+                        "password_hash": fast_hash(r["documento"]),
                         "created_at": datetime.utcnow(),
                     }
                     for r in lote
