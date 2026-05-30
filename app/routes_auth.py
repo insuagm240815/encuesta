@@ -1,32 +1,62 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from sqlalchemy import or_
 from .models import db, User
 from .extensions import limiter
 
 auth_bp = Blueprint("auth", __name__)
 
 
+def normalizar_uf(uf):
+    """Normaliza UF quitando ceros a la izquierda del número base.
+    Ejemplos: '0425' -> '425', '00425-INQ' -> '425-INQ', '425' -> '425'
+    """
+    uf = uf.strip().upper()
+    if '-' in uf:
+        partes = uf.split('-', 1)
+        num = partes[0].lstrip('0') or '0'
+        return f"{num}-{partes[1]}"
+    else:
+        return uf.lstrip('0') or '0'
+
+
+def buscar_usuario(uf_input):
+    """Busca usuario por UF normalizando ceros a la izquierda."""
+    uf_norm = normalizar_uf(uf_input)
+    # Buscar todas las UFs que podrían coincidir
+    users = User.query.filter_by(is_admin=False).all()
+    for u in users:
+        if normalizar_uf(u.documento) == uf_norm:
+            return u
+    # También buscar admin por documento exacto
+    return User.query.filter_by(documento=uf_input).first()
+
+
 @auth_bp.route("/acceso", methods=["GET", "POST"])
-@limiter.limit("10 per minute; 30 per hour")
+@limiter.limit("20 per minute; 100 per hour")
 def login():
     if request.method == "POST":
-        documento = request.form.get("documento", "").strip()
-        password = request.form.get("password", "").strip()
+        uf_input = request.form.get("documento", "").strip()
 
-        user = User.query.filter_by(documento=documento).first()
-        if user and user.check_password(password):
-            session["user_id"] = user.id
-            session["is_admin"] = user.is_admin
-            session["is_operator"] = user.is_operator
-            session["user_name"] = user.nombre
-            if user.is_admin or user.is_operator:
-                if user.must_change_password and not user.is_admin:
-                    return redirect(url_for("auth.change_password"))
-                return redirect(url_for("admin.index"))
-            # Si debe cambiar contraseña, redirigir antes de continuar
-            if user.must_change_password:
-                return redirect(url_for("auth.change_password"))
-            return redirect(url_for("survey.index"))
-        flash("UF o contraseña incorrectos.", "error")
+        user = buscar_usuario(uf_input)
+
+        # Admin requiere contraseña, usuarios normales solo UF
+        if user and user.is_admin:
+            password = request.form.get("password", "").strip()
+            if not user.check_password(password):
+                flash("Credenciales incorrectas.", "error")
+                return render_template("auth/login.html", is_admin_attempt=True)
+        elif not user:
+            flash("UF no encontrada.", "error")
+            return render_template("auth/login.html")
+
+        session["user_id"] = user.id
+        session["is_admin"] = user.is_admin
+        session["is_operator"] = getattr(user, 'is_operator', False)
+        session["user_name"] = user.nombre
+
+        if user.is_admin or session["is_operator"]:
+            return redirect(url_for("admin.index"))
+        return redirect(url_for("survey.index"))
 
     return render_template("auth/login.html")
 

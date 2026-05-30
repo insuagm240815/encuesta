@@ -8,15 +8,16 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label>Unidad Funcional (UF)</label>
-        <input type="text" name="documento" required autofocus placeholder="Ej: 0388 o 0388-INQ">
+        <input type="text" name="documento" required autofocus placeholder="Ej: 425 o 425-INQ" style="font-size:1.1rem;padding:.65rem .75rem;">
       </div>
+      {% if is_admin_attempt %}
       <div class="form-group">
         <label>Contraseña</label>
-        <input type="password" name="password" required placeholder="Contraseña">
+        <input type="password" name="password" required placeholder="Contraseña de administrador">
       </div>
-      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Ingresar</button>
+      {% endif %}
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;font-size:1rem;padding:.7rem;">Ingresar →</button>
     </form>
-    <p class="text-muted mt-2" style="text-align:center;">La contraseña por defecto es tu UF.</p>
   </div>
 </div>
 {% endblock %}
