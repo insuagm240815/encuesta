@@ -8,10 +8,6 @@
   @media(max-width:768px){ .stats-row{ grid-template-columns:1fr 1fr; } }
   @media(max-width:420px){ .stats-row{ grid-template-columns:1fr; } }
 
-  /* ── Participation section ───────────────────────────────── */
-  .part-grid { display:grid; grid-template-columns:420px 1fr; gap:1.5rem; margin-bottom:1.5rem; align-items:start; }
-  @media(max-width:900px){ .part-grid{ grid-template-columns:1fr; } }
-
   /* ── Progress bar ────────────────────────────────────────── */
   .pbar-wrap { background:#e2e8f0; border-radius:4px; height:7px; min-width:60px; flex:1; }
   .pbar      { height:7px; border-radius:4px; transition:width .4s; }
@@ -93,59 +89,14 @@
   </div>
 </div>
 
-<!-- Participación por sector -->
-{% if group_participation %}
-<div class="part-grid">
-  <!-- Torta -->
-  <div class="card">
-    <div class="card-header"><span class="card-title">Participación por sector</span></div>
-    <canvas id="pie-sector" style="max-height:340px;"></canvas>
-  </div>
-  <!-- Tabla -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Detalle por Grupo Primario</span>
-      <div style="display:flex;align-items:center;gap:.5rem;">
-        <label style="font-size:.8rem;font-weight:500;white-space:nowrap;">Filtrar:</label>
-        <input type="text" id="group-filter" oninput="filterGroups()"
-               placeholder="Ej: 0388-AP"
-               style="width:160px;font-size:.8rem;padding:.3rem .6rem;">
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table id="group-table">
-        <thead><tr><th>Grupo Primario</th><th>Resp.</th><th>Total</th><th>%</th><th style="width:90px;"></th></tr></thead>
-        <tbody>
-          {% for g in group_participation %}
-          {% set p = g.pct|int %}
-          <tr data-group="{{ g.group }}">
-            <td><strong>{{ g.group }}</strong></td>
-            <td>{{ g.responded }}</td>
-            <td>{{ g.total }}</td>
-            <td>{{ g.pct }}%</td>
-            <td>
-              <div class="pbar-wrap">
-                <div class="pbar {% if p<30 %}pbar-low{% elif p<70 %}pbar-mid{% else %}pbar-high{% endif %}"
-                     style="width:{{ p }}%"></div>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-{% endif %}
-
 <!-- Resultados por pregunta -->
-<div class="section-title">Resultados por pregunta</div>
+<div class="section-title" style="font-size:1.2rem;margin-top:.5rem;">📊 Resultados por pregunta</div>
 
 {% if results %}
   {% for q in results %}
-  <div class="q-card">
+  <div class="q-card" style="box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:1.5rem;">
     <div class="q-card-header">
-      <div class="q-title">{{ loop.index }}. {{ q.text }}</div>
+      <div class="q-title" style="font-size:1rem;">{{ loop.index }}. {{ q.text }}</div>
       <div class="q-meta">
         {{ q.total_answers }} resp.
         {% if q.average is defined %}&nbsp;<span class="avg-badge">Prom. {{ q.average }}</span>{% endif %}
@@ -169,6 +120,41 @@
   {% endfor %}
 {% else %}
   <p class="text-muted">No hay preguntas configuradas.</p>
+{% endif %}
+
+<!-- Detalle por UF (al final) -->
+{% if group_participation %}
+<div class="section-title" style="font-size:1.2rem;margin-top:2rem;">📋 Detalle de participación por UF</div>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Participación por Unidad Funcional</span>
+    <input type="text" id="group-filter" oninput="filterGroups()" placeholder="Filtrar por UF..."
+           style="width:180px;font-size:.8rem;padding:.3rem .6rem;">
+  </div>
+  <div class="table-wrap">
+    <table id="group-table">
+      <thead><tr><th>UF</th><th>Respondió</th><th>%</th><th style="width:120px;"></th></tr></thead>
+      <tbody>
+        {% for g in group_participation %}
+        {% set p = g.pct|int %}
+        <tr data-group="{{ g.group }}">
+          <td><strong>{{ g.group }}</strong></td>
+          <td>{% if g.responded %}<span class="badge badge-green">✓ Sí</span>{% else %}<span class="badge badge-gray">No</span>{% endif %}</td>
+          <td>{{ g.pct }}%</td>
+          <td>
+            <div class="pbar-wrap">
+              <div class="pbar {% if p<30 %}pbar-low{% elif p<70 %}pbar-mid{% else %}pbar-high{% endif %}"
+                   style="width:{{ p }}%"></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <!-- Paginación UF -->
+  <div id="uf-pagination" style="display:flex;gap:.4rem;flex-wrap:wrap;padding:.75rem .5rem;align-items:center;"></div>
+</div>
 {% endif %}
 
 {% endblock %}
@@ -275,15 +261,6 @@
 
 {% block scripts %}
 <script>
-// Filtro de grupos en tabla
-function filterGroups() {
-  const val = document.getElementById('group-filter').value.toLowerCase().trim();
-  document.querySelectorAll('#group-table tbody tr').forEach(tr => {
-    const group = tr.dataset.group.toLowerCase();
-    tr.style.display = (!val || group.includes(val)) ? '' : 'none';
-  });
-}
-
 // Cambio de tipo de gráfico
 function setType(cid, type, btn) {
   btn.closest('.ct-toggle').querySelectorAll('.ct-btn').forEach(b => b.classList.remove('active'));
@@ -297,30 +274,67 @@ function setType(cid, type, btn) {
   ch.update();
 }
 
-// Torta de participación por sector
+// Paginación + filtro tabla UF
 (function(){
-  const groups = {{ group_participation|tojson }};
-  if (!groups.length) return;
-  const COLORS = ['#2563eb','#16a34a','#dc2626','#d97706','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#0284c7','#9333ea','#14b8a6'];
-  new Chart(document.getElementById('pie-sector').getContext('2d'), {
-    type: 'pie',
-    data: {
-      labels: groups.map(g => g.group),
-      datasets: [{
-        data: groups.map(g => g.responded),
-        backgroundColor: COLORS.map(c => c + 'cc'),
-        borderColor: COLORS,
-        borderWidth: 2,
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position:'right', labels:{ font:{size:11}, boxWidth:14 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} respondieron (${groups[ctx.dataIndex].pct}%)` } }
-      }
+  const PER_PAGE = 25;
+  let currentPage = 1;
+  let filtered = [];
+
+  function allRows() {
+    return Array.from(document.querySelectorAll('#group-table tbody tr'));
+  }
+
+  function applyFilter() {
+    const val = document.getElementById('group-filter')?.value.toLowerCase().trim() || '';
+    filtered = allRows().filter(tr => !val || tr.dataset.group.toLowerCase().includes(val));
+    currentPage = 1;
+    render();
+  }
+
+  function render() {
+    const start = (currentPage - 1) * PER_PAGE;
+    const end = start + PER_PAGE;
+    allRows().forEach(tr => tr.style.display = 'none');
+    filtered.slice(start, end).forEach(tr => tr.style.display = '');
+    renderPagination();
+  }
+
+  function renderPagination() {
+    const pages = Math.ceil(filtered.length / PER_PAGE);
+    const container = document.getElementById('uf-pagination');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const info = document.createElement('span');
+    info.style.cssText = 'font-size:.78rem;color:var(--text-muted);margin-right:.5rem;';
+    const start = Math.min((currentPage-1)*PER_PAGE+1, filtered.length);
+    const end = Math.min(currentPage*PER_PAGE, filtered.length);
+    info.textContent = `${start}–${end} de ${filtered.length}`;
+    container.appendChild(info);
+
+    if (pages <= 1) return;
+
+    const btn = (label, page, active) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.className = 'btn btn-sm ' + (active ? 'btn-primary' : 'btn-outline');
+      b.onclick = () => { currentPage = page; render(); };
+      b.disabled = page < 1 || page > pages;
+      return b;
+    };
+
+    container.appendChild(btn('←', currentPage - 1, false));
+    for (let p = Math.max(1, currentPage-2); p <= Math.min(pages, currentPage+2); p++) {
+      container.appendChild(btn(p, p, p === currentPage));
     }
-  });
+    container.appendChild(btn('→', currentPage + 1, false));
+  }
+
+  window.filterGroups = applyFilter;
+
+  // Init
+  filtered = allRows();
+  render();
 })();
 </script>
 {% endblock %}
