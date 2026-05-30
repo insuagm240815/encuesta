@@ -524,6 +524,20 @@ def user_delete(user_id):
 
 # ── Results Dashboard ──────────────────────────────────────────────────────────
 
+@admin_bp.route("/survey/<int:survey_id>/reset-response/<int:user_id>", methods=["POST"])
+@admin_required
+def reset_user_response(survey_id, user_id):
+    response = Response.query.filter_by(survey_id=survey_id, user_id=user_id).first()
+    if response:
+        Answer.query.filter_by(response_id=response.id).delete()
+        db.session.delete(response)
+        db.session.commit()
+        flash("Respuesta eliminada correctamente.", "success")
+    else:
+        flash("No se encontró respuesta para este usuario.", "warning")
+    return redirect(url_for("admin.survey_results", survey_id=survey_id))
+
+
 @admin_bp.route("/survey/<int:survey_id>/results")
 @operator_required
 def survey_results(survey_id):
@@ -557,6 +571,12 @@ def survey_results(survey_id):
         .group_by(User.parcela)
         .all()
     )
+    # Mapa parcela -> user_id para poder resetear respuesta
+    user_id_map = dict(
+        db.session.query(User.parcela, User.id)
+        .filter(User.is_admin == False)
+        .all()
+    )
     group_participation = sorted(
         [
             {
@@ -564,6 +584,7 @@ def survey_results(survey_id):
                 "total": t,
                 "responded": responded_map.get(g, 0),
                 "pct": round(responded_map.get(g, 0) / t * 100, 1) if t else 0,
+                "user_id": user_id_map.get(g),
             }
             for g, t in group_stats
         ],
