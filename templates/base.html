@@ -200,7 +200,7 @@
 </head>
 <body>
 <nav>
-  <a class="brand" href="/">
+  <a class="brand" href="{% if session.is_admin %}/panel/{% elif session.is_operator %}/panel/{% elif session.user_id %}/inicio/{% else %}/{% endif %}">
     <img src="/static/img/app_logo.png" alt="Country CBP">
     <span>Encuestas CBP</span>
   </a>
