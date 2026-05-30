@@ -3,7 +3,10 @@
 {% block content %}
 <div style="max-width:400px;margin:3rem auto;">
   <div class="card">
-    <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:1.5rem;text-align:center;">📋 Sistema de Encuestas</h1>
+    <div style="text-align:center;margin-bottom:1.25rem;">
+      <img src="/static/img/app_logo.png" alt="Country CBP" style="height:70px;width:auto;">
+    </div>
+    <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:1.5rem;text-align:center;">Sistema de Encuestas</h1>
     <form method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
