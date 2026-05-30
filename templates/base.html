@@ -215,6 +215,8 @@
     {% if session.is_admin %}
       <a href="/admin/" style="background:rgba(255,255,255,.15);padding:.3rem .8rem;border-radius:5px;color:#fff;font-weight:600;">🏠 Panel admin</a>
       <a href="/admin/users" style="background:rgba(255,255,255,.15);padding:.3rem .8rem;border-radius:5px;color:#fff;font-weight:600;">👥 Usuarios</a>
+    {% elif session.is_operator %}
+      <a href="/admin/" style="background:rgba(255,255,255,.15);padding:.3rem .8rem;border-radius:5px;color:#fff;font-weight:600;">📋 Encuestas</a>
     {% else %}
       <a href="/encuesta/" style="background:rgba(255,255,255,.15);padding:.3rem .8rem;border-radius:5px;color:#fff;font-weight:600;">📋 Mis encuestas</a>
     {% endif %}

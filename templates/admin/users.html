@@ -1,42 +1,64 @@
 {% extends "base.html" %}
 {% block title %}Usuarios{% endblock %}
 {% block content %}
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem;">
   <h1 class="page-title" style="margin:0;">Grupos ({{ users|length }})</h1>
-  <div class="flex gap-2">
+  <div class="flex gap-2 flex-wrap">
     <a href="/admin/users/import" class="btn btn-primary">⬆ Importar Excel</a>
     <form method="POST" action="/admin/users/clear" onsubmit="return confirm('¿Eliminar TODOS los usuarios no-admin? Esta acción no se puede deshacer.')">
       <button type="submit" class="btn btn-danger">🗑 Limpiar usuarios</button>
     </form>
   </div>
 </div>
+
+<!-- Filtro -->
+<div class="card" style="padding:.75rem 1rem;margin-bottom:1rem;">
+  <input type="text" id="user-filter" placeholder="Filtrar por UF, nombre o tipo..." oninput="filterUsers()" style="max-width:380px;">
+</div>
+
 <div class="card">
   <div class="table-wrap">
-    <table>
+    <table id="users-table">
       <thead>
         <tr>
-          <th>UF</th><th>Nombre</th><th>Email</th><th>Tipo</th><th>App</th><th>Acciones</th>
+          <th>UF</th><th>Nombre</th><th>Email</th><th>Tipo</th><th>Rol</th><th>App</th><th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         {% for u in users %}
-        <tr>
+        <tr data-search="{{ u.documento|lower }} {{ u.nombre|lower }} {{ (u.grupo_primario or '')|lower }}">
           <td><code>{{ u.documento }}</code></td>
           <td>{{ u.nombre }}</td>
           <td class="text-muted">{{ u.email or '—' }}</td>
           <td>{{ u.grupo_primario or '—' }}</td>
+          <td>
+            {% if u.is_admin %}
+              <span class="badge badge-blue">Admin</span>
+            {% elif u.is_operator %}
+              <span class="badge badge-yellow">Operador</span>
+            {% else %}
+              <span class="badge badge-gray">Usuario</span>
+            {% endif %}
+          </td>
           <td>{% if u.app_access %}<span class="badge badge-green">Sí</span>{% else %}<span class="badge badge-gray">No</span>{% endif %}</td>
           <td>
             <div class="flex gap-2">
               <button class="btn btn-outline btn-sm" onclick="resetPwd({{ u.id }}, '{{ u.nombre }}')">🔑 Reset pwd</button>
-              <form method="POST" action="/admin/users/{{ u.id }}/delete" onsubmit="return confirm('¿Eliminar usuario {{ u.nombre }}?')">
+              {% if not u.is_admin %}
+              <form method="POST" action="/admin/users/{{ u.id }}/toggle-operator">
+                <button class="btn btn-sm {% if u.is_operator %}btn-warning{% else %}btn-outline{% endif %}" title="{% if u.is_operator %}Quitar operador{% else %}Hacer operador{% endif %}">
+                  {% if u.is_operator %}👤→🔒{% else %}👤→⚙{% endif %}
+                </button>
+              </form>
+              <form method="POST" action="/admin/users/{{ u.id }}/delete" onsubmit="return confirm('¿Eliminar {{ u.nombre }}?')">
                 <button class="btn btn-danger btn-sm">🗑</button>
               </form>
+              {% endif %}
             </div>
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" class="text-muted">No hay usuarios. <a href="/admin/users/import">Importa un Excel</a>.</td></tr>
+        <tr><td colspan="7" class="text-muted">No hay usuarios. <a href="/admin/users/import">Importa un Excel</a>.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -45,8 +67,16 @@
 {% endblock %}
 {% block scripts %}
 <script>
+function filterUsers() {
+  const val = document.getElementById('user-filter').value.toLowerCase().trim();
+  document.querySelectorAll('#users-table tbody tr').forEach(tr => {
+    const search = tr.dataset.search || '';
+    tr.style.display = (!val || search.includes(val)) ? '' : 'none';
+  });
+}
+
 async function resetPwd(userId, name) {
-  if (!confirm(`¿Restablecer contraseña de ${name} a su número de documento?`)) return;
+  if (!confirm(`¿Restablecer contraseña de ${name} a su UF?`)) return;
   const res = await fetch(`/admin/users/${userId}/reset-password`, {method:'POST'});
   const data = await res.json();
   alert(data.message);

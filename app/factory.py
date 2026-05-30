@@ -67,6 +67,9 @@ def _run_migrations():
         if "parcela" not in cols:
             conn.execute(text("ALTER TABLE users ADD COLUMN parcela VARCHAR(100)"))
             conn.commit()
+        if "is_operator" not in cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN is_operator BOOLEAN DEFAULT FALSE"))
+            conn.commit()
 
 
 def _seed_admin():

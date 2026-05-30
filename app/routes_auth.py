@@ -14,8 +14,11 @@ def login():
         if user and user.check_password(password):
             session["user_id"] = user.id
             session["is_admin"] = user.is_admin
+            session["is_operator"] = user.is_operator
             session["user_name"] = user.nombre
-            if user.is_admin:
+            if user.is_admin or user.is_operator:
+                if user.must_change_password and not user.is_admin:
+                    return redirect(url_for("auth.change_password"))
                 return redirect(url_for("admin.index"))
             # Si debe cambiar contraseña, redirigir antes de continuar
             if user.must_change_password:

@@ -16,6 +16,7 @@ class User(db.Model):
     app_access = db.Column(db.Boolean, default=True)
     password_hash = db.Column(db.String(256), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    is_operator = db.Column(db.Boolean, default=False)  # puede crear/editar encuestas
     must_change_password = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

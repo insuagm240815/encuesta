@@ -24,7 +24,16 @@ def admin_required(f):
         if not session.get("is_admin"):
             return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
+    return decorated
 
+
+def operator_required(f):
+    """Permite acceso a admin y operadores."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("is_admin") and not session.get("is_operator"):
+            return redirect(url_for("auth.login"))
+        return f(*args, **kwargs)
     return decorated
 
 
@@ -41,7 +50,7 @@ def index():
 # ── Survey CRUD ────────────────────────────────────────────────────────────────
 
 @admin_bp.route("/survey/new", methods=["GET", "POST"])
-@admin_required
+@operator_required
 def survey_new():
     if request.method == "POST":
         title = request.form.get("title", "").strip()
@@ -70,7 +79,7 @@ def survey_new():
 
 
 @admin_bp.route("/survey/<int:survey_id>/edit", methods=["GET", "POST"])
-@admin_required
+@operator_required
 def survey_edit(survey_id):
     survey = Survey.query.get_or_404(survey_id)
     if request.method == "POST":
@@ -108,7 +117,7 @@ def survey_delete(survey_id):
 # ── Questions (API) ────────────────────────────────────────────────────────────
 
 @admin_bp.route("/survey/<int:survey_id>/questions", methods=["GET"])
-@admin_required
+@operator_required
 def questions_list(survey_id):
     survey = Survey.query.get_or_404(survey_id)
     questions = Question.query.filter_by(
@@ -149,7 +158,7 @@ def questions_list(survey_id):
 
 
 @admin_bp.route("/survey/<int:survey_id>/questions", methods=["POST"])
-@admin_required
+@operator_required
 def question_create(survey_id):
     Survey.query.get_or_404(survey_id)
     data = request.json
@@ -183,7 +192,7 @@ def question_create(survey_id):
 
 
 @admin_bp.route("/questions/<int:q_id>", methods=["PUT"])
-@admin_required
+@operator_required
 def question_update(q_id):
     q = Question.query.get_or_404(q_id)
     data = request.json
@@ -208,7 +217,7 @@ def question_update(q_id):
 
 
 @admin_bp.route("/questions/<int:q_id>", methods=["DELETE"])
-@admin_required
+@operator_required
 def question_delete(q_id):
     q = Question.query.get_or_404(q_id)
     # Delete subquestions first
@@ -224,7 +233,7 @@ def question_delete(q_id):
 
 
 @admin_bp.route("/questions/<int:q_id>/reorder", methods=["POST"])
-@admin_required
+@operator_required
 def question_reorder(q_id):
     data = request.json  # {"order": [id1, id2, ...]}
     for idx, qid in enumerate(data.get("order", [])):
@@ -234,7 +243,7 @@ def question_reorder(q_id):
 
 
 @admin_bp.route("/questions/<int:q_id>/subquestion", methods=["POST"])
-@admin_required
+@operator_required
 def subquestion_create(q_id):
     parent = Question.query.get_or_404(q_id)
     data = request.json
@@ -264,7 +273,7 @@ def subquestion_create(q_id):
 
 
 @admin_bp.route("/subquestions/<int:sq_id>", methods=["PUT"])
-@admin_required
+@operator_required
 def subquestion_update(sq_id):
     sq = Question.query.get_or_404(sq_id)
     data = request.json
@@ -288,7 +297,7 @@ def subquestion_update(sq_id):
 
 
 @admin_bp.route("/subquestions/<int:sq_id>", methods=["DELETE"])
-@admin_required
+@operator_required
 def subquestion_delete(sq_id):
     sq = Question.query.get_or_404(sq_id)
     QuestionOption.query.filter_by(question_id=sq.id).delete()
@@ -448,6 +457,18 @@ def users_import():
         return redirect(url_for("admin.users_list"))
 
     return render_template("admin/users_import.html")
+
+
+@admin_bp.route("/users/<int:user_id>/toggle-operator", methods=["POST"])
+@admin_required
+def user_toggle_operator(user_id):
+    user = User.query.get_or_404(user_id)
+    if not user.is_admin:
+        user.is_operator = not user.is_operator
+        db.session.commit()
+        rol = "operador" if user.is_operator else "usuario"
+        flash(f"{user.nombre} ahora es {rol}.", "success")
+    return redirect(url_for("admin.users_list"))
 
 
 @admin_bp.route("/users/clear", methods=["POST"])
