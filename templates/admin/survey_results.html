@@ -20,8 +20,9 @@
   .q-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem; flex-wrap:wrap; margin-bottom:1rem; }
   .q-title  { font-weight:600; font-size:.95rem; flex:1; line-height:1.4; }
   .q-meta   { font-size:.78rem; color:var(--text-muted); white-space:nowrap; }
-  .q-layout { display:grid; grid-template-columns:240px 1fr; gap:1.5rem; align-items:start; }
-  .q-chart-wrap { position:relative; width:100%; }
+  .q-layout { display:grid; grid-template-columns:minmax(180px,280px) minmax(0,1fr); gap:1.5rem; align-items:start; overflow:hidden; }
+  .q-chart-wrap { position:relative; min-width:0; overflow:hidden; }
+  .q-chart-wrap canvas { max-width:100% !important; }
   @media(max-width:700px){ .q-layout{ grid-template-columns:1fr; } }
 
   /* toggle */
