@@ -8,8 +8,7 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label>Unidad Funcional (UF)</label>
-        <input type="text" name="documento" required autofocus placeholder="Ej: 2899" style="font-size:1.1rem;padding:.65rem .75rem;">
-        <p style="font-size:.78rem;color:var(--text-muted);margin-top:.4rem;">Por ej.: 2899 o 2899-INQ si sos inquilino</p>
+        <input type="text" name="documento" required autofocus placeholder="Ej: 2899 o 2899-INQ si sos inquilino" style="font-size:1rem;padding:.65rem .75rem;">
       </div>
       {% if is_admin_attempt %}
       <div class="form-group">
