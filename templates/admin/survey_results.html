@@ -20,10 +20,10 @@
   .q-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem; flex-wrap:wrap; margin-bottom:1rem; }
   .q-title  { font-weight:600; font-size:.95rem; flex:1; line-height:1.4; }
   .q-meta   { font-size:.78rem; color:var(--text-muted); white-space:nowrap; }
-  .q-layout { display:flex; gap:1.5rem; align-items:flex-start; flex-wrap:wrap; }
-  .q-table-side { flex:0 0 260px; min-width:0; }
-  .q-chart-side { flex:1; min-width:300px; max-width:500px; }
-  @media(max-width:700px){ .q-table-side, .q-chart-side { flex:none; width:100%; max-width:100%; } }
+  .q-layout { display:grid; grid-template-columns:260px 440px; gap:2rem; align-items:start; }
+  .q-table-side { overflow:hidden; }
+  .q-chart-side { overflow:hidden; }
+  @media(max-width:800px){ .q-layout{ grid-template-columns:1fr; } }
 
   /* toggle */
   .ct-toggle { display:flex; gap:.3rem; margin-bottom:.7rem; }
