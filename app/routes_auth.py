@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from .models import User
+from .models import db, User
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -17,10 +17,40 @@ def login():
             session["user_name"] = user.nombre
             if user.is_admin:
                 return redirect(url_for("admin.index"))
+            # Si debe cambiar contraseña, redirigir antes de continuar
+            if user.must_change_password:
+                return redirect(url_for("auth.change_password"))
             return redirect(url_for("survey.index"))
-        flash("Documento o contraseña incorrectos.", "error")
+        flash("UF o contraseña incorrectos.", "error")
 
     return render_template("auth/login.html")
+
+
+@auth_bp.route("/cambiar-contrasena", methods=["GET", "POST"])
+def change_password():
+    if not session.get("user_id"):
+        return redirect(url_for("auth.login"))
+
+    user = User.query.get(session["user_id"])
+    if not user:
+        return redirect(url_for("auth.login"))
+
+    if request.method == "POST":
+        nueva = request.form.get("nueva", "").strip()
+        confirmar = request.form.get("confirmar", "").strip()
+
+        if len(nueva) < 6:
+            flash("La contraseña debe tener al menos 6 caracteres.", "error")
+        elif nueva != confirmar:
+            flash("Las contraseñas no coinciden.", "error")
+        else:
+            user.set_password(nueva)
+            user.must_change_password = False
+            db.session.commit()
+            flash("Contraseña actualizada correctamente.", "success")
+            return redirect(url_for("survey.index"))
+
+    return render_template("auth/change_password.html", user=user)
 
 
 @auth_bp.route("/logout")

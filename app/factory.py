@@ -47,9 +47,26 @@ def create_app(config_override=None):
             db.create_all()
         except Exception:
             db.session.rollback()
+        # Migraciones manuales para columnas nuevas
+        _run_migrations()
         _seed_admin()
 
     return app
+
+
+def _run_migrations():
+    """Agrega columnas nuevas si no existen (compatible SQLite y PostgreSQL)."""
+    from sqlalchemy import text, inspect
+    engine = db.engine
+    inspector = inspect(engine)
+    cols = [c["name"] for c in inspector.get_columns("users")]
+    with engine.connect() as conn:
+        if "must_change_password" not in cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT TRUE"))
+            conn.commit()
+        if "parcela" not in cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN parcela VARCHAR(100)"))
+            conn.commit()
 
 
 def _seed_admin():
