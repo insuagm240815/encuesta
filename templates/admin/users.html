@@ -2,7 +2,7 @@
 {% block title %}Usuarios{% endblock %}
 {% block content %}
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem;">
-  <h1 class="page-title" style="margin:0;">Grupos ({{ users|length }})</h1>
+  <h1 class="page-title" style="margin:0;">Grupos ({{ pagination.total }})</h1>
   <div class="flex gap-2 flex-wrap">
     <a href="/admin/users/import" class="btn btn-primary">⬆ Importar Excel</a>
     <form method="POST" action="/admin/users/clear" onsubmit="return confirm('¿Eliminar TODOS los usuarios no-admin? Esta acción no se puede deshacer.')">
@@ -12,13 +12,17 @@
 </div>
 
 <!-- Filtro -->
-<div class="card" style="padding:.75rem 1rem;margin-bottom:1rem;">
-  <input type="text" id="user-filter" placeholder="Filtrar por UF, nombre o tipo..." oninput="filterUsers()" style="max-width:380px;">
-</div>
+<form method="GET" action="/admin/users" style="margin-bottom:1rem;">
+  <div style="display:flex;gap:.5rem;max-width:460px;">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar por UF, nombre o tipo..." style="flex:1;">
+    <button type="submit" class="btn btn-primary">Buscar</button>
+    {% if q %}<a href="/admin/users" class="btn btn-outline">✕ Limpiar</a>{% endif %}
+  </div>
+</form>
 
 <div class="card">
   <div class="table-wrap">
-    <table id="users-table">
+    <table>
       <thead>
         <tr>
           <th>UF</th><th>Nombre</th><th>Email</th><th>Tipo</th><th>Rol</th><th>App</th><th>Acciones</th>
@@ -26,7 +30,7 @@
       </thead>
       <tbody>
         {% for u in users %}
-        <tr data-search="{{ u.documento|lower }} {{ u.nombre|lower }} {{ (u.grupo_primario or '')|lower }}">
+        <tr>
           <td><code>{{ u.documento }}</code></td>
           <td>{{ u.nombre }}</td>
           <td class="text-muted">{{ u.email or '—' }}</td>
@@ -43,11 +47,11 @@
           <td>{% if u.app_access %}<span class="badge badge-green">Sí</span>{% else %}<span class="badge badge-gray">No</span>{% endif %}</td>
           <td>
             <div class="flex gap-2">
-              <button class="btn btn-outline btn-sm" onclick="resetPwd({{ u.id }}, '{{ u.nombre }}')">🔑 Reset pwd</button>
+              <button class="btn btn-outline btn-sm" onclick="resetPwd({{ u.id }}, '{{ u.nombre }}')">🔑 Reset</button>
               {% if not u.is_admin %}
               <form method="POST" action="/admin/users/{{ u.id }}/toggle-operator">
                 <button class="btn btn-sm {% if u.is_operator %}btn-warning{% else %}btn-outline{% endif %}" title="{% if u.is_operator %}Quitar operador{% else %}Hacer operador{% endif %}">
-                  {% if u.is_operator %}👤→🔒{% else %}👤→⚙{% endif %}
+                  ⚙
                 </button>
               </form>
               <form method="POST" action="/admin/users/{{ u.id }}/delete" onsubmit="return confirm('¿Eliminar {{ u.nombre }}?')">
@@ -58,23 +62,39 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="7" class="text-muted">No hay usuarios. <a href="/admin/users/import">Importa un Excel</a>.</td></tr>
+        <tr><td colspan="7" class="text-muted">No se encontraron usuarios.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
+<!-- Paginación -->
+{% if pagination.pages > 1 %}
+<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:1rem;">
+  {% if pagination.has_prev %}
+    <a href="/admin/users?page={{ pagination.prev_num }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">← Anterior</a>
+  {% endif %}
+  {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+    {% if p %}
+      <a href="/admin/users?page={{ p }}{% if q %}&q={{ q }}{% endif %}"
+         class="btn btn-sm {% if p == pagination.page %}btn-primary{% else %}btn-outline{% endif %}">{{ p }}</a>
+    {% else %}
+      <span style="color:var(--text-muted);">…</span>
+    {% endif %}
+  {% endfor %}
+  {% if pagination.has_next %}
+    <a href="/admin/users?page={{ pagination.next_num }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">Siguiente →</a>
+  {% endif %}
+  <span class="text-muted" style="font-size:.8rem;">
+    Mostrando {{ ((pagination.page-1)*50)+1 }}–{{ [pagination.page*50, pagination.total]|min }} de {{ pagination.total }}
+  </span>
+</div>
+{% endif %}
+
 {% endblock %}
 {% block scripts %}
 <script>
-function filterUsers() {
-  const val = document.getElementById('user-filter').value.toLowerCase().trim();
-  document.querySelectorAll('#users-table tbody tr').forEach(tr => {
-    const search = tr.dataset.search || '';
-    tr.style.display = (!val || search.includes(val)) ? '' : 'none';
-  });
-}
-
 async function resetPwd(userId, name) {
   if (!confirm(`¿Restablecer contraseña de ${name} a su UF?`)) return;
   const res = await fetch(`/admin/users/${userId}/reset-password`, {method:'POST'});

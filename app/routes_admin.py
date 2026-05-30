@@ -312,8 +312,22 @@ def subquestion_delete(sq_id):
 @admin_bp.route("/users")
 @admin_required
 def users_list():
-    users = User.query.filter_by(is_admin=False).order_by(User.nombre).all()
-    return render_template("admin/users.html", users=users)
+    q = request.args.get("q", "").strip()
+    page = request.args.get("page", 1, type=int)
+    per_page = 50
+
+    query = User.query.filter_by(is_admin=False)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                User.documento.ilike(like),
+                User.nombre.ilike(like),
+                User.grupo_primario.ilike(like),
+            )
+        )
+    pagination = query.order_by(User.documento).paginate(page=page, per_page=per_page, error_out=False)
+    return render_template("admin/users.html", users=pagination.items, pagination=pagination, q=q)
 
 
 @admin_bp.route("/users/import", methods=["GET", "POST"])
