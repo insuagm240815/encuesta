@@ -331,40 +331,61 @@ def users_import():
                         return i
             return None
 
+        # Detección automática de formato:
+        # Formato A (nuevo): columnas UF, RESPONSABLE, TIPO
+        # Formato B (viejo): columnas documento/residente, grupo primario
+        idx_uf = col(["uf"])
+        idx_responsable = col(["responsable"])
+        idx_tipo = col(["tipo"])
         idx_nombre = col(["residente", "nombre", "name"])
         idx_email = col(["email", "correo", "mail"])
         idx_grupo = col(["grupo primario", "primario", "grupo_primario"])
         idx_parcela = col(["parcela"])
         idx_app = col(["app"])
 
-        if idx_grupo is None or idx_nombre is None:
-            flash("No se encontraron columnas 'Grupo Primario' y 'Residente' en el Excel.", "error")
+        # Usar formato nuevo (UF) si existe, sino formato viejo
+        usar_formato_uf = idx_uf is not None and idx_responsable is not None
+
+        if not usar_formato_uf and idx_grupo is None:
+            flash("No se encontraron columnas válidas en el Excel.", "error")
             return redirect(request.url)
 
-        # Nueva lógica: un usuario por Grupo Primario único
-        # documento = grupo_primario (es el identificador de login)
-        # contraseña inicial = grupo_primario
-        grupos_vistos = {}  # grupo -> primera fila con ese grupo
+        # Leer filas — un usuario por UF (formato nuevo) o por grupo primario (formato viejo)
+        usuarios_vistos = {}
         total_filas = 0
         for row in ws.iter_rows(min_row=2, values_only=True):
             total_filas += 1
-            grupo = str(row[idx_grupo]).strip()[:200] if (idx_grupo is not None and row[idx_grupo]) else ""
-            nombre = str(row[idx_nombre]).strip()[:200] if row[idx_nombre] else ""
-            email = str(row[idx_email]).strip()[:200] if (idx_email is not None and row[idx_email]) else ""
-            parcela_val = str(row[idx_parcela]).strip()[:100] if (idx_parcela is not None and row[idx_parcela]) else ""
-            app_val = str(row[idx_app]).strip().lower() if (idx_app is not None and row[idx_app]) else "si"
-            if grupo and nombre:
-                if grupo not in grupos_vistos:
-                    grupos_vistos[grupo] = {
-                        "documento": grupo,  # grupo primario como identificador
-                        "nombre": grupo,     # nombre del grupo
+            if usar_formato_uf:
+                uf = str(row[idx_uf]).strip()[:50] if row[idx_uf] else ""
+                nombre = str(row[idx_responsable]).strip()[:200] if row[idx_responsable] else ""
+                tipo = str(row[idx_tipo]).strip()[:200] if (idx_tipo is not None and row[idx_tipo]) else ""
+                email = str(row[idx_email]).strip()[:200] if (idx_email is not None and row[idx_email]) else ""
+                if uf and nombre:
+                    usuarios_vistos[uf] = {
+                        "documento": uf,
+                        "nombre": nombre,
+                        "email": email,
+                        "grupo_primario": tipo,
+                        "parcela": uf,
+                        "app_access": True,
+                    }
+            else:
+                grupo = str(row[idx_grupo]).strip()[:200] if (idx_grupo is not None and row[idx_grupo]) else ""
+                nombre = str(row[idx_nombre]).strip()[:200] if row[idx_nombre] else ""
+                email = str(row[idx_email]).strip()[:200] if (idx_email is not None and row[idx_email]) else ""
+                parcela_val = str(row[idx_parcela]).strip()[:100] if (idx_parcela is not None and row[idx_parcela]) else ""
+                app_val = str(row[idx_app]).strip().lower() if (idx_app is not None and row[idx_app]) else "si"
+                if grupo and nombre and grupo not in usuarios_vistos:
+                    usuarios_vistos[grupo] = {
+                        "documento": grupo,
+                        "nombre": grupo,
                         "email": email,
                         "grupo_primario": grupo,
                         "parcela": parcela_val,
                         "app_access": app_val in ("si", "sí", "yes", "true", "1"),
                     }
 
-        rows_data = list(grupos_vistos.values())
+        rows_data = list(usuarios_vistos.values())
         skipped = total_filas - len(rows_data)
 
         # Una sola consulta para obtener grupos ya existentes
