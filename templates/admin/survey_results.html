@@ -20,10 +20,9 @@
   .q-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem; flex-wrap:wrap; margin-bottom:1rem; }
   .q-title  { font-weight:600; font-size:.95rem; flex:1; line-height:1.4; }
   .q-meta   { font-size:.78rem; color:var(--text-muted); white-space:nowrap; }
-  .q-layout { display:flex; gap:1.5rem; align-items:flex-start; }
-  .q-layout > div { flex:0 0 220px; min-width:0; }
-  .q-layout > canvas { flex:1; min-width:0; max-height:300px; }
-  @media(max-width:700px){ .q-layout{ flex-direction:column; } .q-layout > div { flex:none; width:100%; } }
+  .q-layout { display:grid; grid-template-columns:240px 1fr; gap:1.5rem; align-items:start; }
+  .q-chart-wrap { position:relative; width:100%; }
+  @media(max-width:700px){ .q-layout{ grid-template-columns:1fr; } }
 
   /* toggle */
   .ct-toggle { display:flex; gap:.3rem; margin-bottom:.7rem; }
@@ -195,7 +194,7 @@
         </tbody>
       </table>
     </div>
-    <canvas id="c_{{cid}}" style="max-height:280px;"></canvas>
+    <div class="q-chart-wrap"><canvas id="c_{{cid}}" style="max-height:280px;"></canvas></div>
   </div>
   <script>
   (function(){
@@ -237,7 +236,7 @@
         </tbody>
       </table>
     </div>
-    <canvas id="c_{{cid}}" style="max-height:240px;"></canvas>
+    <div class="q-chart-wrap"><canvas id="c_{{cid}}" style="max-height:240px;"></canvas></div>
   </div>
   <script>
   (function(){
