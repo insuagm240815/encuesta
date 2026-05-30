@@ -40,7 +40,7 @@ def operator_required(f):
 # ── Dashboard ──────────────────────────────────────────────────────────────────
 
 @admin_bp.route("/")
-@admin_required
+@operator_required
 def index():
     surveys = Survey.query.order_by(Survey.created_at.desc()).all()
     users_count = User.query.filter_by(is_admin=False).count()
@@ -525,7 +525,7 @@ def user_delete(user_id):
 # ── Results Dashboard ──────────────────────────────────────────────────────────
 
 @admin_bp.route("/survey/<int:survey_id>/results")
-@admin_required
+@operator_required
 def survey_results(survey_id):
     survey = Survey.query.get_or_404(survey_id)
     total_users = User.query.filter_by(is_admin=False).count()
@@ -633,7 +633,7 @@ def _build_question_result(q):
 # ── Export Excel ───────────────────────────────────────────────────────────────
 
 @admin_bp.route("/survey/<int:survey_id>/export")
-@admin_required
+@operator_required
 def survey_export(survey_id):
     import io
     from collections import Counter
