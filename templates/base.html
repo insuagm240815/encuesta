@@ -211,7 +211,7 @@
     </svg>
   </button>
   <div class="nav-menu" id="nav-menu">
-    <span class="user-name">{{ session.user_name }}</span>
+    {% if session.is_admin or session.is_operator %}<span class="user-name">{{ session.user_name }}</span>{% endif %}
     {% if session.is_admin %}
       <a href="/panel/" style="background:rgba(255,255,255,.15);padding:.3rem .8rem;border-radius:5px;color:#fff;font-weight:600;">🏠 Panel admin</a>
       <a href="/panel/users" style="background:rgba(255,255,255,.15);padding:.3rem .8rem;border-radius:5px;color:#fff;font-weight:600;">👥 Usuarios</a>
