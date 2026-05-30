@@ -2,8 +2,13 @@
 {% block title %}Usuarios{% endblock %}
 {% block content %}
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-  <h1 class="page-title" style="margin:0;">Usuarios ({{ users|length }})</h1>
-  <a href="/admin/users/import" class="btn btn-primary">⬆ Importar Excel</a>
+  <h1 class="page-title" style="margin:0;">Grupos ({{ users|length }})</h1>
+  <div class="flex gap-2">
+    <a href="/admin/users/import" class="btn btn-primary">⬆ Importar Excel</a>
+    <form method="POST" action="/admin/users/clear" onsubmit="return confirm('¿Eliminar TODOS los usuarios no-admin? Esta acción no se puede deshacer.')">
+      <button type="submit" class="btn btn-danger">🗑 Limpiar usuarios</button>
+    </form>
+  </div>
 </div>
 <div class="card">
   <div class="table-wrap">

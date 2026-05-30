@@ -331,48 +331,52 @@ def users_import():
                         return i
             return None
 
-        idx_doc = col(["documento", "doc"])
         idx_nombre = col(["residente", "nombre", "name"])
         idx_email = col(["email", "correo", "mail"])
         idx_grupo = col(["grupo primario", "primario", "grupo_primario"])
         idx_parcela = col(["parcela"])
         idx_app = col(["app"])
 
-        if idx_doc is None or idx_nombre is None:
-            flash("No se encontraron columnas 'documento' y 'residente' en el Excel.", "error")
+        if idx_grupo is None or idx_nombre is None:
+            flash("No se encontraron columnas 'Grupo Primario' y 'Residente' en el Excel.", "error")
             return redirect(request.url)
 
-        # Leer todas las filas en memoria primero
-        rows_data = []
+        # Nueva lógica: un usuario por Grupo Primario único
+        # documento = grupo_primario (es el identificador de login)
+        # contraseña inicial = grupo_primario
+        grupos_vistos = {}  # grupo -> primera fila con ese grupo
+        total_filas = 0
         for row in ws.iter_rows(min_row=2, values_only=True):
-            documento = str(row[idx_doc]).strip()[:50] if row[idx_doc] else ""
+            total_filas += 1
+            grupo = str(row[idx_grupo]).strip()[:200] if (idx_grupo is not None and row[idx_grupo]) else ""
             nombre = str(row[idx_nombre]).strip()[:200] if row[idx_nombre] else ""
             email = str(row[idx_email]).strip()[:200] if (idx_email is not None and row[idx_email]) else ""
-            grupo = str(row[idx_grupo]).strip()[:200] if (idx_grupo is not None and row[idx_grupo]) else ""
             parcela_val = str(row[idx_parcela]).strip()[:100] if (idx_parcela is not None and row[idx_parcela]) else ""
             app_val = str(row[idx_app]).strip().lower() if (idx_app is not None and row[idx_app]) else "si"
-            if documento and nombre and grupo:
-                rows_data.append({
-                    "documento": documento,
-                    "nombre": nombre,
-                    "email": email,
-                    "grupo_primario": grupo,
-                    "parcela": parcela_val,
-                    "app_access": app_val in ("si", "sí", "yes", "true", "1"),
-                })
+            if grupo and nombre:
+                if grupo not in grupos_vistos:
+                    grupos_vistos[grupo] = {
+                        "documento": grupo,  # grupo primario como identificador
+                        "nombre": grupo,     # nombre del grupo
+                        "email": email,
+                        "grupo_primario": grupo,
+                        "parcela": parcela_val,
+                        "app_access": app_val in ("si", "sí", "yes", "true", "1"),
+                    }
 
-        skipped = (ws.max_row - 1) - len(rows_data)
+        rows_data = list(grupos_vistos.values())
+        skipped = total_filas - len(rows_data)
 
-        # Una sola consulta para obtener todos los usuarios existentes
-        docs_en_excel = [r["documento"] for r in rows_data]
+        # Una sola consulta para obtener grupos ya existentes
+        grupos_en_excel = [r["documento"] for r in rows_data]
         existentes = {
             u.documento: u
-            for u in User.query.filter(User.documento.in_(docs_en_excel)).all()
+            for u in User.query.filter(User.documento.in_(grupos_en_excel)).all()
         }
 
         created = 0
         updated = 0
-        nuevos = {}  # doc -> row, deduplicar por documento
+        nuevos = {}
 
         for r in rows_data:
             if r["documento"] in existentes:
@@ -384,17 +388,13 @@ def users_import():
                 u.app_access = r["app_access"]
                 updated += 1
             else:
-                nuevos[r["documento"]] = r  # última fila gana si hay duplicados
+                nuevos[r["documento"]] = r
 
         nuevos = list(nuevos.values())
 
-        # Insertar nuevos en lotes de 500 (bulk insert)
-        # Usamos md5 solo para el hash inicial del import masivo (rendimiento).
-        # El usuario puede cambiar su contraseña después con un hash seguro.
+        # Insertar nuevos — contraseña inicial = grupo primario
         from werkzeug.security import generate_password_hash as gph
-        import hashlib
         def fast_hash(password):
-            # pbkdf2 con iteraciones bajas para import masivo
             return gph(password, method="pbkdf2:sha256", salt_length=8)
 
         BATCH = 500
@@ -421,12 +421,27 @@ def users_import():
 
         db.session.commit()
         flash(
-            f"Importación completada: {created} creados, {updated} actualizados, {skipped} omitidos (sin grupo primario).",
+            f"Importación completada: {created} grupos creados, {updated} actualizados, {skipped} filas duplicadas omitidas.",
             "success",
         )
         return redirect(url_for("admin.users_list"))
 
     return render_template("admin/users_import.html")
+
+
+@admin_bp.route("/users/clear", methods=["POST"])
+@admin_required
+def users_clear():
+    """Elimina todos los usuarios no-admin y sus respuestas."""
+    users = User.query.filter_by(is_admin=False).all()
+    for u in users:
+        for r in u.responses:
+            Answer.query.filter_by(response_id=r.id).delete()
+        Response.query.filter_by(user_id=u.id).delete()
+    User.query.filter_by(is_admin=False).delete()
+    db.session.commit()
+    flash("Todos los usuarios (no admin) fueron eliminados.", "success")
+    return redirect(url_for("admin.users_list"))
 
 
 @admin_bp.route("/users/<int:user_id>/reset-password", methods=["POST"])
