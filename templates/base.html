@@ -7,19 +7,19 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
+    --primary: #1a5c2a;
+    --primary-dark: #0f3d1a;
     --success: #16a34a;
-    --danger: #dc2626;
+    --danger: #c0392b;
     --warning: #d97706;
     --info: #0891b2;
-    --bg: #f8fafc;
+    --bg: #f5f7f5;
     --surface: #ffffff;
-    --border: #e2e8f0;
+    --border: #d4e0d4;
     --text: #1e293b;
     --text-muted: #64748b;
     --radius: 8px;
-    --nav-h: 56px;
+    --nav-h: 60px;
   }
   html { font-size: 16px; }
   body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
@@ -28,9 +28,9 @@
 
   /* ── Navbar ──────────────────────────────────────────────────────── */
   nav {
-    background: var(--primary);
+    background: linear-gradient(135deg, #1a5c2a 0%, #0f3d1a 100%);
     color: #fff;
-    padding: 0 1rem;
+    padding: 0 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -38,9 +38,11 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    border-bottom: 3px solid #c0392b;
   }
-  nav .brand { font-weight: 700; font-size: 1rem; color: #fff; white-space: nowrap; }
+  nav .brand { font-weight: 700; font-size: 1rem; color: #fff; white-space: nowrap; display:flex; align-items:center; gap:.6rem; }
+  nav .brand img { height: 38px; width: auto; border-radius: 4px; }
   nav .nav-links { display: flex; gap: .75rem; align-items: center; flex-wrap: nowrap; }
   nav .nav-links a { color: rgba(255,255,255,.85); font-size: .875rem; white-space: nowrap; }
   nav .nav-links a:hover { color: #fff; text-decoration: none; }
@@ -152,7 +154,7 @@
 
   /* ── Stat cards ──────────────────────────────────────────────────── */
   .stat { text-align: center; padding: 1.25rem 1rem; }
-  .stat-number { font-size: 2.2rem; font-weight: 700; color: var(--primary); line-height: 1; }
+  .stat-number { font-size: 2.2rem; font-weight: 700; color: #c0392b; line-height: 1; }
   .stat-label  { font-size: .8rem; color: var(--text-muted); margin-top: .4rem; }
 
   /* ── Modal ───────────────────────────────────────────────────────── */
@@ -198,7 +200,10 @@
 </head>
 <body>
 <nav>
-  <a class="brand" href="/">📋 Encuestas</a>
+  <a class="brand" href="/">
+    <img src="/static/img/app_logo.png" alt="Country CBP">
+    <span>Encuestas CBP</span>
+  </a>
   {% if session.user_id %}
   <button class="nav-toggle" id="nav-toggle" aria-label="Menú" onclick="toggleNav()">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
