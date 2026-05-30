@@ -51,6 +51,7 @@
   <p class="scroll-hint" id="scroll-hint">↓ Desplazate para leer todo el contenido</p>
 
   <form method="POST" action="/inicio/{{ survey.id }}/terminos/aceptar" id="terms-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="accept-box">
       <label class="form-check" style="align-items:flex-start;gap:.65rem;">
         <input type="checkbox" name="accept_terms" value="1" id="accept-chk"

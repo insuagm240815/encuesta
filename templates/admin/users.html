@@ -6,6 +6,7 @@
   <div class="flex gap-2 flex-wrap">
     <a href="/panel/users/import" class="btn btn-primary">⬆ Importar Excel</a>
     <form method="POST" action="/panel/users/clear" onsubmit="return confirm('¿Eliminar TODOS los usuarios no-admin? Esta acción no se puede deshacer.')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-danger">🗑 Limpiar usuarios</button>
     </form>
   </div>
@@ -50,11 +51,13 @@
               <button class="btn btn-outline btn-sm" onclick="resetPwd({{ u.id }}, '{{ u.nombre }}')">🔑 Reset</button>
               {% if not u.is_admin %}
               <form method="POST" action="/panel/users/{{ u.id }}/toggle-operator">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm {% if u.is_operator %}btn-warning{% else %}btn-outline{% endif %}" title="{% if u.is_operator %}Quitar operador{% else %}Hacer operador{% endif %}">
                   ⚙
                 </button>
               </form>
               <form method="POST" action="/panel/users/{{ u.id }}/delete" onsubmit="return confirm('¿Eliminar {{ u.nombre }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-danger btn-sm">🗑</button>
               </form>
               {% endif %}

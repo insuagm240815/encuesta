@@ -53,6 +53,7 @@
               <a href="/panel/survey/{{ s.id }}/results" class="btn btn-outline btn-sm">📊</a>
               <form method="POST" action="/panel/survey/{{ s.id }}/delete"
                     onsubmit="return confirm('¿Eliminar esta encuesta y todas sus respuestas?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-danger btn-sm">🗑</button>
               </form>
             </div>

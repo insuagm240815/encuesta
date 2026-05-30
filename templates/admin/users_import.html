@@ -10,6 +10,7 @@
     La contraseña inicial de cada usuario es su número de documento.
   </div>
   <form method="POST" enctype="multipart/form-data" style="margin-top:1rem;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-group">
       <label>Archivo Excel (.xlsx)</label>
       <input type="file" name="excel_file" accept=".xlsx" required style="padding:.4rem;">

@@ -78,6 +78,7 @@
   {% endif %}
 
   <form method="POST" action="/inicio/{{ survey.id }}/submit" id="survey-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {% for q in questions %}
     <div class="q-block" id="qblock_{{ q.id }}">
       <div class="q-num">Pregunta {{ loop.index }} de {{ questions|length }}</div>
