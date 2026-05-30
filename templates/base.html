@@ -213,10 +213,10 @@
   <div class="nav-menu" id="nav-menu">
     <span class="user-name">{{ session.user_name }}</span>
     {% if session.is_admin %}
-      <a href="/admin/">Panel admin</a>
-      <a href="/admin/users">Usuarios</a>
+      <a href="/admin/" style="background:rgba(255,255,255,.15);padding:.3rem .8rem;border-radius:5px;color:#fff;font-weight:600;">🏠 Panel admin</a>
+      <a href="/admin/users" style="background:rgba(255,255,255,.15);padding:.3rem .8rem;border-radius:5px;color:#fff;font-weight:600;">👥 Usuarios</a>
     {% else %}
-      <a href="/encuesta/">Mis encuestas</a>
+      <a href="/encuesta/" style="background:rgba(255,255,255,.15);padding:.3rem .8rem;border-radius:5px;color:#fff;font-weight:600;">📋 Mis encuestas</a>
     {% endif %}
     <a href="/logout" style="background:rgba(192,57,43,.85);padding:.3rem .8rem;border-radius:5px;color:#fff;font-weight:600;">⏻ Salir</a>
   </div>
