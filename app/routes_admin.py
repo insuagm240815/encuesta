@@ -15,7 +15,7 @@ from flask import (
 
 from .models import Answer, Question, QuestionOption, Response, Survey, User, db
 
-admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+admin_bp = Blueprint("admin", __name__, url_prefix="/panel")
 
 
 def admin_required(f):

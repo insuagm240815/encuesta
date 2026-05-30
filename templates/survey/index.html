@@ -19,9 +19,9 @@
           <span class="badge badge-green">✓ Ya respondiste</span>
         {% elif item.is_open %}
           {% if item.survey.terms_text %}
-          <a href="/encuesta/{{ item.survey.id }}/terminos" class="btn btn-primary">Responder →</a>
+          <a href="/inicio/{{ item.survey.id }}/terminos" class="btn btn-primary">Responder →</a>
           {% else %}
-          <a href="/encuesta/{{ item.survey.id }}" class="btn btn-primary">Responder →</a>
+          <a href="/inicio/{{ item.survey.id }}" class="btn btn-primary">Responder →</a>
           {% endif %}
         {% else %}
           <span class="badge badge-gray">No disponible</span>

@@ -5,7 +5,7 @@ from .extensions import limiter
 auth_bp = Blueprint("auth", __name__)
 
 
-@auth_bp.route("/login", methods=["GET", "POST"])
+@auth_bp.route("/acceso", methods=["GET", "POST"])
 @limiter.limit("10 per minute; 30 per hour")
 def login():
     if request.method == "POST":
@@ -31,7 +31,7 @@ def login():
     return render_template("auth/login.html")
 
 
-@auth_bp.route("/cambiar-contrasena", methods=["GET", "POST"])
+@auth_bp.route("/perfil/seguridad", methods=["GET", "POST"])
 def change_password():
     if not session.get("user_id"):
         return redirect(url_for("auth.login"))
@@ -58,7 +58,7 @@ def change_password():
     return render_template("auth/change_password.html", user=user)
 
 
-@auth_bp.route("/logout")
+@auth_bp.route("/salir")
 def logout():
     session.clear()
     return redirect(url_for("auth.login"))

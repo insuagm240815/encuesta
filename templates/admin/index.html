@@ -4,8 +4,8 @@
 <div class="page-header">
   <h1 class="page-title">Panel de Administración</h1>
   <div class="actions flex gap-2 flex-wrap">
-    <a href="/admin/users/import" class="btn btn-outline">⬆ Importar usuarios</a>
-    <a href="/admin/survey/new" class="btn btn-primary">+ Nueva encuesta</a>
+    <a href="/panel/users/import" class="btn btn-outline">⬆ Importar usuarios</a>
+    <a href="/panel/survey/new" class="btn btn-primary">+ Nueva encuesta</a>
   </div>
 </div>
 
@@ -27,7 +27,7 @@
 <div class="card">
   <div class="card-header">
     <span class="card-title">Encuestas</span>
-    <a href="/admin/survey/new" class="btn btn-primary btn-sm">+ Nueva</a>
+    <a href="/panel/survey/new" class="btn btn-primary btn-sm">+ Nueva</a>
   </div>
   {% if surveys %}
   <div class="table-wrap">
@@ -49,9 +49,9 @@
           <td>{{ s.responses|length }}</td>
           <td>
             <div class="flex gap-1 flex-wrap">
-              <a href="/admin/survey/{{ s.id }}/edit" class="btn btn-outline btn-sm">✏</a>
-              <a href="/admin/survey/{{ s.id }}/results" class="btn btn-outline btn-sm">📊</a>
-              <form method="POST" action="/admin/survey/{{ s.id }}/delete"
+              <a href="/panel/survey/{{ s.id }}/edit" class="btn btn-outline btn-sm">✏</a>
+              <a href="/panel/survey/{{ s.id }}/results" class="btn btn-outline btn-sm">📊</a>
+              <form method="POST" action="/panel/survey/{{ s.id }}/delete"
                     onsubmit="return confirm('¿Eliminar esta encuesta y todas sus respuestas?')">
                 <button class="btn btn-danger btn-sm">🗑</button>
               </form>
@@ -63,7 +63,7 @@
     </table>
   </div>
   {% else %}
-  <p class="text-muted">No hay encuestas. <a href="/admin/survey/new">Crea la primera</a>.</p>
+  <p class="text-muted">No hay encuestas. <a href="/panel/survey/new">Crea la primera</a>.</p>
   {% endif %}
 </div>
 {% endblock %}

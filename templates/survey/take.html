@@ -77,7 +77,7 @@
   </div>
   {% endif %}
 
-  <form method="POST" action="/encuesta/{{ survey.id }}/submit" id="survey-form">
+  <form method="POST" action="/inicio/{{ survey.id }}/submit" id="survey-form">
     {% for q in questions %}
     <div class="q-block" id="qblock_{{ q.id }}">
       <div class="q-num">Pregunta {{ loop.index }} de {{ questions|length }}</div>
@@ -171,7 +171,7 @@
       <button type="submit" class="btn btn-success" style="font-size:1rem;padding:.65rem 2rem;">
         ✓ Enviar respuestas
       </button>
-      <a href="/encuesta/" class="btn btn-outline">Cancelar</a>
+      <a href="/inicio/" class="btn btn-outline">Cancelar</a>
     </div>
   </form>
 </div>

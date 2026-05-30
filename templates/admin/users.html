@@ -4,19 +4,19 @@
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem;">
   <h1 class="page-title" style="margin:0;">Grupos ({{ pagination.total }})</h1>
   <div class="flex gap-2 flex-wrap">
-    <a href="/admin/users/import" class="btn btn-primary">⬆ Importar Excel</a>
-    <form method="POST" action="/admin/users/clear" onsubmit="return confirm('¿Eliminar TODOS los usuarios no-admin? Esta acción no se puede deshacer.')">
+    <a href="/panel/users/import" class="btn btn-primary">⬆ Importar Excel</a>
+    <form method="POST" action="/panel/users/clear" onsubmit="return confirm('¿Eliminar TODOS los usuarios no-admin? Esta acción no se puede deshacer.')">
       <button type="submit" class="btn btn-danger">🗑 Limpiar usuarios</button>
     </form>
   </div>
 </div>
 
 <!-- Filtro -->
-<form method="GET" action="/admin/users" style="margin-bottom:1rem;">
+<form method="GET" action="/panel/users" style="margin-bottom:1rem;">
   <div style="display:flex;gap:.5rem;max-width:460px;">
     <input type="text" name="q" value="{{ q }}" placeholder="Buscar por UF, nombre o tipo..." style="flex:1;">
     <button type="submit" class="btn btn-primary">Buscar</button>
-    {% if q %}<a href="/admin/users" class="btn btn-outline">✕ Limpiar</a>{% endif %}
+    {% if q %}<a href="/panel/users" class="btn btn-outline">✕ Limpiar</a>{% endif %}
   </div>
 </form>
 
@@ -49,12 +49,12 @@
             <div class="flex gap-2">
               <button class="btn btn-outline btn-sm" onclick="resetPwd({{ u.id }}, '{{ u.nombre }}')">🔑 Reset</button>
               {% if not u.is_admin %}
-              <form method="POST" action="/admin/users/{{ u.id }}/toggle-operator">
+              <form method="POST" action="/panel/users/{{ u.id }}/toggle-operator">
                 <button class="btn btn-sm {% if u.is_operator %}btn-warning{% else %}btn-outline{% endif %}" title="{% if u.is_operator %}Quitar operador{% else %}Hacer operador{% endif %}">
                   ⚙
                 </button>
               </form>
-              <form method="POST" action="/admin/users/{{ u.id }}/delete" onsubmit="return confirm('¿Eliminar {{ u.nombre }}?')">
+              <form method="POST" action="/panel/users/{{ u.id }}/delete" onsubmit="return confirm('¿Eliminar {{ u.nombre }}?')">
                 <button class="btn btn-danger btn-sm">🗑</button>
               </form>
               {% endif %}
@@ -73,18 +73,18 @@
 {% if pagination.pages > 1 %}
 <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:1rem;">
   {% if pagination.has_prev %}
-    <a href="/admin/users?page={{ pagination.prev_num }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">← Anterior</a>
+    <a href="/panel/users?page={{ pagination.prev_num }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">← Anterior</a>
   {% endif %}
   {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
     {% if p %}
-      <a href="/admin/users?page={{ p }}{% if q %}&q={{ q }}{% endif %}"
+      <a href="/panel/users?page={{ p }}{% if q %}&q={{ q }}{% endif %}"
          class="btn btn-sm {% if p == pagination.page %}btn-primary{% else %}btn-outline{% endif %}">{{ p }}</a>
     {% else %}
       <span style="color:var(--text-muted);">…</span>
     {% endif %}
   {% endfor %}
   {% if pagination.has_next %}
-    <a href="/admin/users?page={{ pagination.next_num }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">Siguiente →</a>
+    <a href="/panel/users?page={{ pagination.next_num }}{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline btn-sm">Siguiente →</a>
   {% endif %}
   <span class="text-muted" style="font-size:.8rem;">
     Mostrando {{ ((pagination.page-1)*50)+1 }}–{{ [pagination.page*50, pagination.total]|min }} de {{ pagination.total }}
@@ -97,7 +97,7 @@
 <script>
 async function resetPwd(userId, name) {
   if (!confirm(`¿Restablecer contraseña de ${name} a su UF?`)) return;
-  const res = await fetch(`/admin/users/${userId}/reset-password`, {method:'POST'});
+  const res = await fetch(`/panel/users/${userId}/reset-password`, {method:'POST'});
   const data = await res.json();
   alert(data.message);
 }

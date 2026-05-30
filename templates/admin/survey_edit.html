@@ -27,8 +27,8 @@
 <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
   <h1 class="page-title" style="margin:0;">✏ {{ survey.title }}</h1>
   <div class="flex gap-2" style="margin-left:auto;">
-    <a href="/admin/survey/{{ survey.id }}/results" class="btn btn-outline btn-sm">📊 Resultados</a>
-    <a href="/admin/" class="btn btn-outline btn-sm">← Volver</a>
+    <a href="/panel/survey/{{ survey.id }}/results" class="btn btn-outline btn-sm">📊 Resultados</a>
+    <a href="/panel/" class="btn btn-outline btn-sm">← Volver</a>
   </div>
 </div>
 
@@ -223,7 +223,7 @@ let activeSQParentId = null;
 
 // ─── Load questions ───────────────────────────────────────────────────────────
 async function loadQuestions() {
-  const res = await fetch(`/admin/survey/${SURVEY_ID}/questions`);
+  const res = await fetch(`/panel/survey/${SURVEY_ID}/questions`);
   questions = await res.json();
   renderQuestions();
 }
@@ -347,9 +347,9 @@ async function saveQuestion() {
     options: opts,
   };
   if (editingQId) {
-    await fetch(`/admin/questions/${editingQId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    await fetch(`/panel/questions/${editingQId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
   } else {
-    await fetch(`/admin/survey/${SURVEY_ID}/questions`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    await fetch(`/panel/survey/${SURVEY_ID}/questions`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
   }
   closeModal('q-modal');
   loadQuestions();
@@ -357,7 +357,7 @@ async function saveQuestion() {
 
 async function deleteQuestion(qId) {
   if (!confirm('¿Eliminar esta pregunta y sus subpreguntas?')) return;
-  await fetch(`/admin/questions/${qId}`, {method:'DELETE'});
+  await fetch(`/panel/questions/${qId}`, {method:'DELETE'});
   loadQuestions();
 }
 
@@ -425,9 +425,9 @@ async function saveSubquestion() {
     options: opts,
   };
   if (editingSQId) {
-    await fetch(`/admin/subquestions/${editingSQId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    await fetch(`/panel/subquestions/${editingSQId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
   } else {
-    await fetch(`/admin/questions/${activeSQParentId}/subquestion`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    await fetch(`/panel/questions/${activeSQParentId}/subquestion`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
   }
   closeModal('sq-modal');
   loadQuestions();
@@ -435,7 +435,7 @@ async function saveSubquestion() {
 
 async function deleteSubquestion(sqId) {
   if (!confirm('¿Eliminar esta subpregunta?')) return;
-  await fetch(`/admin/subquestions/${sqId}`, {method:'DELETE'});
+  await fetch(`/panel/subquestions/${sqId}`, {method:'DELETE'});
   loadQuestions();
 }
 

@@ -50,7 +50,7 @@
   </div>
   <p class="scroll-hint" id="scroll-hint">↓ Desplazate para leer todo el contenido</p>
 
-  <form method="POST" action="/encuesta/{{ survey.id }}/terminos/aceptar" id="terms-form">
+  <form method="POST" action="/inicio/{{ survey.id }}/terminos/aceptar" id="terms-form">
     <div class="accept-box">
       <label class="form-check" style="align-items:flex-start;gap:.65rem;">
         <input type="checkbox" name="accept_terms" value="1" id="accept-chk"
@@ -66,7 +66,7 @@
               style="font-size:1rem;padding:.65rem 2rem;opacity:.5;cursor:not-allowed;">
         Aceptar y continuar →
       </button>
-      <a href="/encuesta/" class="btn btn-outline">Cancelar</a>
+      <a href="/inicio/" class="btn btn-outline">Cancelar</a>
     </div>
   </form>
 </div>

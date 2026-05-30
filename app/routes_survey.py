@@ -13,7 +13,7 @@ from flask import (
 
 from .models import Answer, Question, Response, Survey, User, db
 
-survey_bp = Blueprint("survey", __name__, url_prefix="/encuesta")
+survey_bp = Blueprint("survey", __name__, url_prefix="/inicio")
 
 
 def login_required(f):
