@@ -3,4 +3,6 @@ flask-sqlalchemy>=3.1
 werkzeug>=3.0
 openpyxl>=3.1
 psycopg2-binary>=2.9
-gunicorn>=21.2          # servidor WSGI para producción
+gunicorn>=21.2
+flask-wtf>=1.2           # CSRF protection
+flask-limiter>=3.5       # Rate limiting

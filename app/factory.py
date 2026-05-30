@@ -1,9 +1,15 @@
 from flask import Flask, redirect, url_for, send_from_directory
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from .config import get_config
 from .models import db, User
 from .routes_auth import auth_bp
 from .routes_admin import admin_bp
 from .routes_survey import survey_bp
+
+csrf = CSRFProtect()
+limiter = Limiter(key_func=get_remote_address, default_limits=[])
 
 
 def create_app(config_override=None):
@@ -12,6 +18,8 @@ def create_app(config_override=None):
     app.config.from_object(cfg)
 
     db.init_app(app)
+    csrf.init_app(app)
+    limiter.init_app(app)
 
     # Filtro Jinja2 para convertir Markdown básico a HTML
     import re as _re

@@ -5,6 +5,7 @@
   <div class="card">
     <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:1.5rem;text-align:center;">📋 Sistema de Encuestas</h1>
     <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label>Unidad Funcional (UF)</label>
         <input type="text" name="documento" required autofocus placeholder="Ej: 0388 o 0388-INQ">
