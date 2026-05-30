@@ -20,7 +20,7 @@
   .q-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem; flex-wrap:wrap; margin-bottom:1rem; }
   .q-title  { font-weight:600; font-size:.95rem; flex:1; line-height:1.4; }
   .q-meta   { font-size:.78rem; color:var(--text-muted); white-space:nowrap; }
-  .q-layout { display:grid; grid-template-columns:1fr 220px; gap:1.5rem; align-items:start; }
+  .q-layout { display:grid; grid-template-columns:200px 1fr; gap:1.5rem; align-items:start; }
   @media(max-width:640px){ .q-layout{ grid-template-columns:1fr; } }
 
   /* toggle */
@@ -174,7 +174,6 @@
     {% endif %}
   </div>
   <div class="q-layout">
-    <canvas id="c_{{cid}}" style="max-height:280px;"></canvas>
     <div>
       <table class="mini-table">
         <thead><tr><th>Opción</th><th>N</th><th>%</th></tr></thead>
@@ -194,6 +193,7 @@
         </tbody>
       </table>
     </div>
+    <canvas id="c_{{cid}}" style="max-height:280px;"></canvas>
   </div>
   <script>
   (function(){
@@ -220,7 +220,6 @@
 
 {% elif q.chart_type == 'bar' and q.average is defined %}{# rating #}
   <div class="q-layout">
-    <canvas id="c_{{cid}}" style="max-height:240px;"></canvas>
     <div>
       <table class="mini-table">
         <thead><tr><th>Valor</th><th>N</th><th>%</th></tr></thead>
@@ -236,6 +235,7 @@
         </tbody>
       </table>
     </div>
+    <canvas id="c_{{cid}}" style="max-height:240px;"></canvas>
   </div>
   <script>
   (function(){
