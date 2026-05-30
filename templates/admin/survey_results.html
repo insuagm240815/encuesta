@@ -20,10 +20,10 @@
   .q-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem; flex-wrap:wrap; margin-bottom:1rem; }
   .q-title  { font-weight:600; font-size:.95rem; flex:1; line-height:1.4; }
   .q-meta   { font-size:.78rem; color:var(--text-muted); white-space:nowrap; }
-  .q-layout { display:grid; grid-template-columns:minmax(180px,280px) minmax(0,1fr); gap:1.5rem; align-items:start; overflow:hidden; }
-  .q-chart-wrap { position:relative; min-width:0; overflow:hidden; }
-  .q-chart-wrap canvas { max-width:100% !important; }
-  @media(max-width:700px){ .q-layout{ grid-template-columns:1fr; } }
+  .q-layout { display:flex; gap:1.5rem; align-items:flex-start; flex-wrap:wrap; }
+  .q-table-side { flex:0 0 260px; min-width:0; }
+  .q-chart-side { flex:1; min-width:300px; max-width:500px; }
+  @media(max-width:700px){ .q-table-side, .q-chart-side { flex:none; width:100%; max-width:100%; } }
 
   /* toggle */
   .ct-toggle { display:flex; gap:.3rem; margin-bottom:.7rem; }
@@ -176,7 +176,7 @@
     {% endif %}
   </div>
   <div class="q-layout">
-    <div>
+    <div class="q-table-side">
       <table class="mini-table">
         <thead><tr><th>Opción</th><th>N</th><th>%</th></tr></thead>
         <tbody>
@@ -195,7 +195,7 @@
         </tbody>
       </table>
     </div>
-    <div class="q-chart-wrap"><canvas id="c_{{cid}}" style="max-height:280px;"></canvas></div>
+    <div class="q-chart-side"><canvas id="c_{{cid}}"></canvas></div>
   </div>
   <script>
   (function(){
@@ -222,7 +222,7 @@
 
 {% elif q.chart_type == 'bar' and q.average is defined %}{# rating #}
   <div class="q-layout">
-    <div>
+    <div class="q-table-side">
       <table class="mini-table">
         <thead><tr><th>Valor</th><th>N</th><th>%</th></tr></thead>
         <tbody>
@@ -237,7 +237,7 @@
         </tbody>
       </table>
     </div>
-    <div class="q-chart-wrap"><canvas id="c_{{cid}}" style="max-height:240px;"></canvas></div>
+    <div class="q-chart-side"><canvas id="c_{{cid}}"></canvas></div>
   </div>
   <script>
   (function(){
