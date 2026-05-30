@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, send_from_directory
 from .config import get_config
 from .models import db, User
 from .routes_auth import auth_bp
@@ -37,6 +37,33 @@ def create_app(config_override=None):
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(survey_bp)
+
+    # ── Security headers ──────────────────────────────────────
+    @app.after_request
+    def set_security_headers(response):
+        # No indexar en buscadores
+        response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+        # Evitar clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+        # Evitar MIME sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # Forzar HTTPS
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        # Referrer mínimo
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Content Security Policy básico
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self';"
+        )
+        return response
+
+    @app.route("/robots.txt")
+    def robots():
+        return send_from_directory(app.static_folder, "robots.txt")
 
     @app.route("/")
     def root():
