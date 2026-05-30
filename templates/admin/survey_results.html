@@ -20,7 +20,7 @@
   .q-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem; flex-wrap:wrap; margin-bottom:1rem; }
   .q-title  { font-weight:600; font-size:.95rem; flex:1; line-height:1.4; }
   .q-meta   { font-size:.78rem; color:var(--text-muted); white-space:nowrap; }
-  .q-layout { display:grid; grid-template-columns:420px 400px; gap:1.5rem; align-items:start; }
+  .q-layout { display:grid; grid-template-columns:1fr 420px; gap:1.5rem; align-items:start; }
   .q-table-side { overflow:hidden; }
   .q-chart-side { overflow:hidden; }
   @media(max-width:800px){ .q-layout{ grid-template-columns:1fr; } }
@@ -34,8 +34,9 @@
   .mini-table { width:100%; border-collapse:collapse; font-size:.8rem; }
   .mini-table th { background:var(--bg); padding:.35rem .5rem; text-align:left; font-weight:600; border-bottom:1px solid var(--border); }
   .mini-table td { padding:.3rem .5rem; border-bottom:1px solid var(--border); }
-  .mini-table td:nth-child(2) { width:36px; text-align:right; }
-  .mini-table td:nth-child(3) { width:80px; white-space:nowrap; }
+  .mini-table td:nth-child(2) { width:60px; text-align:right; white-space:nowrap; }
+  .mini-table .col-n { display:none; }
+  .mini-table .col-n-h { display:none; }
   .mini-table tr:last-child td { border-bottom:none; }
   .mini-pbar-wrap { background:#e2e8f0; border-radius:3px; height:5px; margin-top:.3rem; min-width:50px; }
   .mini-pbar      { height:5px; border-radius:3px; background:var(--primary); }
@@ -180,14 +181,14 @@
   <div class="q-layout">
     <div class="q-table-side">
       <table class="mini-table">
-        <thead><tr><th>Opción</th><th>N</th><th>%</th></tr></thead>
+        <thead><tr><th>Opción</th><th class="col-n-h">N</th><th>%</th></tr></thead>
         <tbody>
           {% set total = q.total_answers if q.total_answers else 1 %}
           {% for d in q.chart_data %}
           {% set pct = ((d.count / total)*100)|round(1) %}
           <tr>
             <td>{{ d.text }}</td>
-            <td><strong>{{ d.count }}</strong></td>
+            <td class="col-n"><strong>{{ d.count }}</strong></td>
             <td>
               {{ pct }}%
               <div class="mini-pbar-wrap"><div class="mini-pbar" style="width:{{ pct|int }}%"></div></div>
@@ -227,13 +228,13 @@
   <div class="q-layout">
     <div class="q-table-side">
       <table class="mini-table">
-        <thead><tr><th>Valor</th><th>N</th><th>%</th></tr></thead>
+        <thead><tr><th>Valor</th><th class="col-n-h">N</th><th>%</th></tr></thead>
         <tbody>
           {% set total = q.total_answers if q.total_answers else 1 %}
           {% for d in q.chart_data %}
           {% set pct = ((d.count / total)*100)|round(1) %}
           <tr>
-            <td>{{ d.text }}</td><td><strong>{{ d.count }}</strong></td>
+            <td>{{ d.text }}</td><td class="col-n"><strong>{{ d.count }}</strong></td>
             <td>{{ pct }}%<div class="mini-pbar-wrap"><div class="mini-pbar" style="width:{{ pct|int }}%"></div></div></td>
           </tr>
           {% endfor %}
