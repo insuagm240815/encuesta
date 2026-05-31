@@ -4,7 +4,7 @@
 <h1 class="page-title">¡Bienvenido! Gracias por participar de la encuesta.</h1>
 {% if surveys %}
   {% for item in surveys %}
-  <div class="card">
+  <div class="card" style="border-left:4px solid var(--primary);box-shadow:0 2px 12px rgba(26,92,42,.1);">
     <div class="card-header">
       <div style="flex:1;min-width:0;">
         <div class="card-title">{{ item.survey.title }}</div>
